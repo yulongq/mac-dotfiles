@@ -9,6 +9,12 @@ target="$HOME/.config/example/config.toml"
 
 The example path is a placeholder. Establish the target's installation prerequisites and ownership using [environment setup](setup.md), and preserve a recovery copy before replacing live configuration. A directory symlink can lead outside the checkout; inspect its complete ownership before applying any child. Private environment files and credential stores remain outside this workflow. Apply Agent settings only after satisfying [their host configuration requirements](../agent-policy/README.md).
 
+## Select the default source
+
+Set `sourceDir` to this checkout's root; `.chezmoiroot` selects `home/`, so `chezmoi source-path` returns the checkout's `home/` directory. On an existing host, inspect the effective `sourceDir` setting before changing any default-directory symlink: an explicit setting takes precedence. Preserve the old source selection, then change only `sourceDir` in the existing chezmoi configuration to this checkout. Retain encryption settings and unrelated template data. If no configuration exists, create a minimal configuration with this `sourceDir`.
+
+Verify `chezmoi source-path` and `chezmoi source-path ~/.zshrc` after selection. Selecting the default does not apply files or run lifecycle scripts. Agent targets still require `--source "$repo/agent-policy"`; the deployed Claude Code pre-edit hook queries both sources explicitly, and must be reapplied if the checkout moves.
+
 ## Create or adopt
 
 For a new configuration, create its source under `home/` using [chezmoi's source attributes](https://www.chezmoi.io/reference/source-state-attributes/), such as `home/dot_config/example/config.toml`. To adopt an existing regular non-secret file instead:
@@ -23,12 +29,14 @@ Review the resulting source and record any new installation or runtime owner in 
 ## Validate
 
 ```sh
-python3 -m unittest discover -s tests -v
+scripts/validate
 chezmoi --source "$repo" --refresh-externals=never status --exclude=encrypted "$target"
 chezmoi --source "$repo" --refresh-externals=never diff --recursive --exclude=encrypted,scripts "$target"
 ```
 
 Read `-` as destination-only and `+` as rendered-source-only. Preserve unrelated destination drift. Scope every real-home status and diff to explicit non-secret targets; `--recursive` is necessary for a directory diff. The test suite alone operates on a complete temporary home. Its lifecycle fixture checks add, source edits, apply, forget, destroy, and preservation of an unmanaged sibling.
+
+Use `scripts/check-home home "$target"` or `scripts/check-home agent-policy "$target"` for a read-only deployment check. Supply explicit non-secret targets; the command exits nonzero for drift or a chezmoi error and prints only status paths, without configuration contents. Modifiers preserve the application-owned values defined in the ownership contract, so those write-backs are clean; reported differences require a scoped diff and an ownership decision. The check does not certify runtime activation. For example, check `~/Brewfile` and `~/.config/homebrew` in the home source, and `~/.agents/skills` in the Agent source.
 
 ## Apply
 

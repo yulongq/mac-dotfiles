@@ -25,10 +25,12 @@ The environment uses Zsh with YAML-defined abbreviations and pinned plugin archi
 With chezmoi 2.73.1 or newer, Python 3.11+, and the shell dependencies installed, run:
 
 ```sh
-python3 -m unittest discover -s tests -v
+scripts/validate
 ```
 
-Validation renders into unique temporary homes, checks repeated application for drift, parses shell/config syntax, verifies PATH selection with synthetic runtimes and abbreviation loading with the installed zsh-abbr, and exercises configuration creation, application, and retirement. Agent modifier tests use synthetic host settings to check field preservation, replacement, initialization, and explicit retirement. The shell suite downloads the declared plugin archives into a temporary cache, so internet access to GitHub is required. Validation never starts agents, installs packages, accesses real private environment files, or switches the active chezmoi source. Runtime-selection tests establish PATH behavior; they do not substitute for Java/Node/project builds or GUI acceptance.
+Validation renders into unique temporary homes, checks repeated application for drift, parses shell/config syntax, verifies PATH selection with synthetic runtimes and abbreviation loading with the installed zsh-abbr, and exercises configuration creation, application, and retirement. The Python suite also runs the Claude Code hook/statusline scripts and the Codex hook contracts; Bun is not required. Agent modifier tests use synthetic host settings to check field preservation, replacement, initialization, and explicit retirement. Both skill registries receive structural and CLI smoke checks. The shell suite downloads the declared plugin archives into a temporary cache, so internet access to GitHub is required. Validation never starts agents, installs packages, accesses real private environment files, or switches the active chezmoi source. Runtime-selection tests establish PATH behavior; they do not substitute for Java/Node/project builds or GUI acceptance.
+
+Enable the same validation before pushes from this checkout with `git config --local core.hooksPath .githooks`. Inspect any existing local hook selection before replacing it. The hook runs `scripts/validate` and aborts the push if a check fails.
 
 ## Repository workflows
 
@@ -65,7 +67,7 @@ chezmoi --source "$PWD" --refresh-externals=never diff --exclude=encrypted,scrip
 
 Follow [environment setup](docs/setup.md) to install prerequisites, configure the selected applications, and verify actual shell, editor, and project behavior. On an existing machine, account for symlink ownership and unmanaged directory contents before applying a configuration group.
 
-The [configuration lifecycle](docs/lifecycle.md) covers adding a target, validating changes, applying a selected target, stopping management, and destroying a retired target. Commands select this checkout explicitly; they do not switch the active default source.
+The [configuration lifecycle](docs/lifecycle.md) covers selecting this checkout as the default source, adding a target, validating changes, applying a selected target, stopping management, and destroying a retired target. Deployment commands still select the intended source explicitly because Agent policy is a separate source.
 
 Review candidate changes from the sources declared in `maintenance/upstreams.toml` using the [upstream adoption procedure](docs/lifecycle.md#review-upstream-changes). This repository records the intended personal configuration, including deliberate differences from those sources.
 

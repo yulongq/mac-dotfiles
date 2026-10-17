@@ -18,3 +18,24 @@ revision = "4323b63b9b16cdd38f86bcd376ba9e3100902084"
 change = "Retire the global Codex model_context_window override"
 reason = "An upstream deletion does not establish whether a host's selected model and provider still require its override. The modifier preserves this undeclared field."
 revisit_when = "Before changing context-window configuration, verify the selected model's effective window in each installed Codex host, then decide and verify exact destination cleanup."
+
+[[pending]]
+source = "joshukraine"
+revision = "cf24722e28efbc294eee806fdbab76f255449e75"
+change = "Adapt git-publish and git-brst to the repository's default branch"
+reason = "The local git-publish only excludes master, and git-brst assumes origin/master and shares a fixed temporary file. These candidates were not selected with the Pi footer and Herdr sidebar adoption."
+revisit_when = "When adopting the Git helper changes, validate main and master, feature-branch publishing, missing comparison refs, error propagation, and concurrent status calls using isolated repositories."
+
+[[pending]]
+source = "joshukraine"
+revision = "cf24722e28efbc294eee806fdbab76f255449e75"
+change = "Assess the upstream Ruby major-version upgrade"
+reason = "The upstream declares Ruby 4.0.7 while this source selects 3.4.4. Configuration rendering does not establish compatibility with local projects and editor gems."
+revisit_when = "When upgrading Ruby, inventory the actual project and editor consumers, run their checks, and preserve asdf as the runtime owner."
+
+[[pending]]
+source = "liby"
+revision = "75ab9096a1568f00344fff8cc6617491e20f82f0"
+change = "Assess the remaining Pi extension package separately from the selected footer"
+reason = "The upstream installer selects the whole Pi Extensions package through its own runtime layout. This repository adopted only the session ID footer and retains npm installation and independently owned extensions."
+revisit_when = "When another extension is selected, inspect that pinned extension and verify its loading and interaction behavior without duplicating the managed footer or existing extensions."

@@ -2,10 +2,10 @@
 # Isolated behavior tests for pre-edit-warn-chezmoi.sh.
 
 set -u
-HOOK="$(cd "$(dirname "$0")" && pwd)/executable_pre-edit-warn-chezmoi.sh"
+SOURCE="$(cd "$(dirname "$0")" && pwd)/executable_pre-edit-warn-chezmoi.sh.tmpl"
 
-if [[ ! -r "$HOOK" ]]; then
-  echo "cannot find hook script at $HOOK" >&2
+if [[ ! -r "$SOURCE" ]]; then
+  echo "cannot find hook script at $SOURCE" >&2
   exit 1
 fi
 
@@ -16,11 +16,28 @@ mkdir -p \
   "$FIXTURE/bin-no-chezmoi" \
   "$FIXTURE/bin-no-jq" \
   "$FIXTURE/home" \
-  "$FIXTURE/source"
+  "$FIXTURE/source/agent-policy"
+HOOK="$FIXTURE/hook.sh"
+chezmoi --config /dev/null --config-format toml --source "$FIXTURE/source/agent-policy" \
+  execute-template <"$SOURCE" >"$HOOK" || exit 1
 
 cat >"$FIXTURE/bin/chezmoi" <<'EOF'
 #!/usr/bin/env bash
+config_source="${FIXTURE_SOURCE}"
+if [[ "$1" == --source ]]; then
+  config_source=$2
+  shift 2
+fi
 [[ "$1" == source-path ]] || exit 1
+if [[ "$config_source" == "${FIXTURE_SOURCE}/agent-policy" ]]; then
+  case "$2" in
+    */home/.codex/AGENTS.md) printf '%s\n' "$config_source/dot_codex/AGENTS.md.tmpl" ;;
+    */home/.claude/settings.json) printf '%s\n' "$config_source/dot_claude/modify_private_settings.json" ;;
+    */home/.agents/skills/new-branch/SKILL.md) printf '%s\n' "$config_source/dot_agents/skills/new-branch/SKILL.md" ;;
+    *) exit 1 ;;
+  esac
+  exit
+fi
 case "$2" in
   */home/managed.txt) printf '%s\n' "${FIXTURE_SOURCE}/dot_managed.txt" ;;
   */home/partial.json) printf '%s\n' "${FIXTURE_SOURCE}/modify_partial.json" ;;
@@ -68,6 +85,9 @@ jq -e '.hookSpecificOutput
   <<<"$REPLY" >/dev/null || FAIL=$((FAIL + 1))
 run_case "source path" allow "$FIXTURE/source/dot_managed.txt"
 run_case "unmanaged path" allow "$FIXTURE/home/unmanaged.txt"
+run_case "Agent instructions in the separate source" deny "$FIXTURE/home/.codex/AGENTS.md"
+run_case "Agent settings in the separate source" ask "$FIXTURE/home/.claude/settings.json"
+run_case "managed skill in the separate source" deny "$FIXTURE/home/.agents/skills/new-branch/SKILL.md"
 run_case "encrypted target" deny "$FIXTURE/home/encrypted.txt"
 jq -e '.hookSpecificOutput.permissionDecisionReason
   | contains("encrypted chezmoi source") and (contains("encrypted_dot_encrypted") | not)' \

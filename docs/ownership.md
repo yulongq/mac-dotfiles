@@ -4,7 +4,7 @@ The repository owns durable configuration and the instructions needed to reconst
 
 | Surface | Owner and source | Installation and configuration contract |
 | --- | --- | --- |
-| Zsh | `home/dot_zshrc`, `home/dot_config/zsh`, and pinned archives in `home/.chezmoiexternal.toml` | Homebrew supplies fzf, zoxide, Starship, eza, and zsh-abbr. `.zshrc.local` remains an optional local override. |
+| Zsh | `home/dot_zshrc`, `home/dot_config/zsh`, and pinned archives in `home/.chezmoiexternal.toml` | Homebrew supplies fzf, zoxide, Starship, eza, zsh-abbr, and Universal Ctags for `ct`. `.zshrc.local` remains an optional local override. |
 | Abbreviations | `home/.chezmoidata/abbreviations.yaml` and `home/dot_config/zsh-abbr/abbreviations.zsh.tmpl` | chezmoi generates the installed Zsh file during apply; edit the YAML instead of the generated target. |
 | Private shell input | Existing local environment file | Consumed through the existing shell entrypoint; never imported, inspected, generated, or backed up by repository scripts. |
 | PATH additions | `home/dot_pathrc` | Preserve the chosen `~/dep` layout; Java, Maven, and Go must exist before their commands can run. |
@@ -29,7 +29,7 @@ The repository owns durable configuration and the instructions needed to reconst
 | Raycast | Deployed script in `home/dot_config/raycast/scripts` | Preserve the existing Script Commands directory registration. Account state and extension settings stay with Raycast. |
 | VS Code, Zed, Karabiner | Application sync, export, or local settings | Record the chosen sync/export owner for machine setup; do not copy mixed app databases or account state. |
 | Desktop apps outside Homebrew | Vendor, App Store, or application-sync owners | These include 1Password, Chrome, ChatGPT, Ghostty, kitty, DeepSeek Harness, Typeless, OrbStack, Fork, Telegram, Discord, WeChat, Spotify, Shottr, CC Switch, tldraw offline, Surge, Raycast, VS Code, Obsidian, TradingView, Longbridge, Rectangle, and BetterDisplay. Retain their selected installation and update owners. |
-| Homebrew updates | `packages/Brewfile`, explicit operator action, and self-updating apps | `~/Brewfile` links to the package declaration. No unattended upgrade job. With XDG enabled, the cask update policy is deployed at `~/.config/homebrew/brew.env`. Unlisted installed packages remain outside cleanup authority. |
+| Homebrew updates | `packages/Brewfile`, explicit operator action, and self-updating apps | `~/Brewfile` links to the package declaration. No unattended upgrade job. With XDG enabled, the cask update policy is deployed at `~/.config/homebrew/brew.env`; its parent directory is private (`0700`), while Homebrew owns its other files. Unlisted installed packages remain outside cleanup authority. |
 
 Machine setup combines managed configuration with runtime archives, application sync or exports, and host-specific Agent settings. Complete the project and GUI checks in [environment setup](setup.md) to verify the environment beyond configuration rendering.
 

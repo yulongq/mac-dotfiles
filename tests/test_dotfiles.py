@@ -176,6 +176,7 @@ class DotfilesTests(unittest.TestCase):
         self.assertFalse((self.destination / "AGENTS.md").exists())
         self.assertFalse((self.destination / ".chezmoidata").exists())
         self.assertEqual((self.destination / "Brewfile").resolve(), ROOT / "packages/Brewfile")
+        self.assertEqual((self.destination / ".config/homebrew").stat().st_mode & 0o777, 0o700)
         self.assertIn(str(ROOT), (self.destination / ".config/zsh/source.zsh").read_text())
         run(*self.chezmoi, "apply", "--exclude=externals,scripts,encrypted")
         result = run(*self.chezmoi, "diff", "--recursive", "--exclude=externals,scripts,encrypted")
@@ -248,7 +249,7 @@ directory = "~/host-worktrees"
 
     def test_declared_shell_dependencies(self):
         brewfile = (ROOT / "packages/Brewfile").read_text()
-        for name in ("fzf", "zoxide", "starship", "eza", "asdf"):
+        for name in ("fzf", "zoxide", "starship", "eza", "asdf", "universal-ctags"):
             self.assertIn(f'brew "{name}"', brewfile)
         self.assertIn('brew "olets/tap/zsh-abbr"', brewfile)
         self.assertIn(".config/tmux/plugins/tpm", tomllib.loads((ROOT / "home/.chezmoiexternal.toml").read_text()))

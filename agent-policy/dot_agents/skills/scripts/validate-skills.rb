@@ -17,13 +17,17 @@ end.parse!
 
 root = options[:root] ? Pathname.new(options[:root]).expand_path : Pathname.new(__dir__).parent
 # The script also runs from its deployed copy (~/.agents/skills/scripts), where
-# root would be the deployed tree and third-party skills would wrongly get full
-# content checks. Ask chezmoi to map root back to its source so both entry
-# points behave identically; in the source tree (or without chezmoi) the lookup
-# fails and root is already correct.
+# root would include independently installed skills. Resolve its owner through
+# the default home source or its separate Agent policy source.
 unless options[:root]
   begin
     source_path, _stderr, status = Open3.capture3("chezmoi", "source-path", root.to_s)
+    unless status.success?
+      home_source, _stderr, home_status = Open3.capture3("chezmoi", "execute-template", "{{ .chezmoi.workingTree }}")
+      if home_status.success?
+        source_path, _stderr, status = Open3.capture3("chezmoi", "--source", File.join(home_source.strip, "agent-policy"), "source-path", root.to_s)
+      end
+    end
     root = Pathname.new(source_path.strip) if status.success? && !source_path.strip.empty?
   rescue Errno::ENOENT
   end

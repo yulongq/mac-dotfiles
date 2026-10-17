@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+repo=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
+if [ "$#" -lt 2 ]; then
+  echo "Usage: scripts/check-home home|agent-policy TARGET..." >&2
+  exit 2
+fi
+case "$1" in
+  home) source_dir=$repo ;;
+  agent-policy) source_dir=$repo/agent-policy ;;
+  *) echo "Choose home or agent-policy." >&2; exit 2 ;;
+esac
+shift
+status=$(chezmoi --source "$source_dir" --refresh-externals=never status --exclude=encrypted,scripts -- "$@")
+if [ -n "$status" ]; then
+  printf '%s\n' "$status"
+  exit 1
+fi

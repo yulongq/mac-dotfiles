@@ -89,7 +89,7 @@ while IFS= read -r cmd; do
   # deploys 0644 and a *.test.* name is chezmoi-ignored, so both would register
   # a command that cannot run.
   src="$HERE/executable_$base"
-  check "executable source exists for $cmd" "$([ -r "$src" ] && echo true || echo false)"
+  check "executable source exists for $cmd" "$([ -r "$src" ] || [ -r "$src.tmpl" ] && echo true || echo false)"
   case "$cmd" in
     "~/.claude/hooks/"*) : ;;
     *) check "command path $cmd is under ~/.claude/hooks/" false ;;
@@ -101,6 +101,7 @@ for src in "$HERE"/executable_pre-* "$HERE"/executable_post-*; do
   [ -e "$src" ] || continue
   base="$(basename "$src")"
   base="${base#executable_}"
+  base="${base%.tmpl}"
   ok=$(jq --arg c "~/.claude/hooks/$base" \
     '[.[][]?.hooks[]? | select(.command == $c)] | length >= 1' <<<"$HOOKS_JSON")
   check "$base is registered" "$ok"
