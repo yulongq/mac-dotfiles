@@ -131,6 +131,7 @@ settings_path="$HOME/.claude/settings.json"
   read -r effort
   read -r model_name
   read -r claude_version
+  read -r speed_sample
 } < <(jq -r --rawfile settings "$settings_path" '
   # Context % is measured against the token count where CC auto-compacts, which
   # stdin does not carry. This mirrors CC 2.1.296 (E5/w5/aE) for the env and
@@ -177,7 +178,9 @@ settings_path="$HOME/.claude/settings.json"
   (.session_id // ""),
   (.effort.level // ""),
   (.model.display_name // ""),
-  .version
+  .version,
+  ({api_ms: .cost.total_api_duration_ms,
+    usage: (.context_window.current_usage | [.input_tokens, .output_tokens, .cache_creation_input_tokens, .cache_read_input_tokens])} | tojson)
 ' <<< "$input")
 
 current=$(( input_tokens + output_tokens + cache_create + cache_read ))
@@ -356,6 +359,44 @@ refresh_usage_cache() {
 
 $needs_refresh && refresh_usage_cache
 
+# Response usage and cumulative API time arrive together. Hold the last rate
+# between responses; unchanged main usage advances only the time baseline.
+# Session locks keep quota fetches out of sampling and serialize resumed sessions.
+output_speed=''
+update_output_speed() {
+  [[ "$session_id" =~ ^[a-zA-Z0-9_-]+$ ]] || return
+  local speed_dir="${cache_dir}/speed" speed_file="${cache_dir}/speed/${session_id}.json"
+  local lock_dir="${speed_dir}/${session_id}.lock" locked=false
+  local previous='' speed_state='' tmp
+  mkdir -p -m 700 "$speed_dir" || return
+  acquire_lock && locked=true
+  [ -f "$speed_file" ] && IFS= read -r previous < "$speed_file"
+  {
+    read -r output_speed
+    read -r speed_state
+  } < <(jq -r --arg previous "$previous" --argjson locked "$locked" '
+    def count: type == "number" and . >= 0;
+    ($previous | fromjson? // {}) as $p
+    | (if ($p.api_ms | count) and ($p.usage | type) == "array"
+          and ($p.speed == null or ($p.speed | count)) then $p else {} end) as $p
+    | if (.api_ms | count) and (.usage[1] | count) then
+        (if $locked then . + {speed: (
+          if $p.api_ms == null or .api_ms < $p.api_ms then null
+          elif .usage != $p.usage and .usage[1] > 0 and .api_ms - $p.api_ms >= 500
+            then .usage[1] * 1000 / (.api_ms - $p.api_ms)
+          else $p.speed end)}
+         else $p end)
+        | (.speed // ""), (if . == $p then "" else tojson end)
+      else empty end
+  ' <<< "$speed_sample" 2>/dev/null)
+  if [ -n "$speed_state" ]; then
+    tmp=$(mktemp "${speed_dir}/tmp.XXXXXX") &&
+      printf '%s\n' "$speed_state" > "$tmp" && mv "$tmp" "$speed_file"
+  fi
+  $locked && rmdir "$lock_dir" 2>/dev/null
+}
+update_output_speed
+
 # ── Rate limit lines ────────────────────────────────────
 # stdin rate_limits are process state in Claude Code (2.1.296): filled by the
 # first API response, replayed unchanged while idle and across /clear, and a
@@ -496,6 +537,9 @@ done
 # only that (the 8-character short id resolves background sessions alone);
 # fading the tail keeps the prefix scannable
 printf "%b\n%b" "$line1" "${muted}${session_id:0:8}${faint}${session_id:8}${reset}"
+if [ -n "$output_speed" ]; then
+  printf '%b%.1f%b' "${sep}${sky}" "$output_speed" "${muted} tok/s${reset}"
+fi
 [ -n "$rate_lines" ] && printf "\n%b" "$rate_lines"
 
 exit 0

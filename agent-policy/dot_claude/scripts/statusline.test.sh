@@ -222,6 +222,44 @@ rm "$stubs/mkdir"
 [ ! -e "$fixture/fetched" ]
 printf 'statusline rate-limit sharing: passed\n'
 
+# Each sample starts a fresh statusline process; only its session's file carries
+# the rate forward. The existing stubs keep credentials and the network isolated.
+speed_line() { # session_id output_tokens api_ms [input_tokens]
+  printf '{"cwd":"%s","session_id":"%s","context_window":{"current_usage":{"input_tokens":%s,"output_tokens":%s}},"cost":{"total_api_duration_ms":%s}}' \
+    "$fixture" "$1" "${4:-1000}" "$2" "$3" |
+    env -u CLAUDE_CODE_OAUTH_TOKEN HOME="$home" XDG_CACHE_HOME="$home/.cache" \
+      PATH="$stubs:/usr/bin:$PATH" COLUMNS=80 /bin/bash "$SOURCE" |
+    sed $'s/\033\\[[0-9;]*m//g' | sed -n '2p'
+}
+reset_state; snapshot 0.0 "$reset_iso"
+speed_session=11111111-1111-4111-8111-111111111111
+expect 'no speed before a baseline' "$(speed_line "$speed_session" 0 1000)" "^${speed_session}$"
+expect 'speed follows the full session id on line 2' "$(speed_line "$speed_session" 400 5000)" "^${speed_session} ∙ 100\\.0 tok/s$"
+expect 'another session starts with its own baseline' "$(speed_line other 100 2000)" '^other$'
+expect 'another session computes its own speed' "$(speed_line other 100 4000 2000)" '^other ∙ 50\.0 tok/s$'
+expect 'an idle refresh holds the last speed' "$(speed_line "$speed_session" 400 5000)" ' ∙ 100\.0 tok/s$'
+expect 'API time without new main usage holds the speed' "$(speed_line "$speed_session" 400 9000)" ' ∙ 100\.0 tok/s$'
+expect 'a response below 500ms keeps the last speed' "$(speed_line "$speed_session" 300 9200 2000)" ' ∙ 100\.0 tok/s$'
+expect 'the next response uses the advanced baseline' "$(speed_line "$speed_session" 300 12000 3000)" ' ∙ 107\.1 tok/s$'
+expect 'missing API time hides speed' "$(speed_line "$speed_session" 300 null 3000)" "^${speed_session}$"
+expect 'missing output usage hides speed' "$(speed_line "$speed_session" null 13000 3000)" "^${speed_session}$"
+expect 'missing data leaves the baseline intact' "$(speed_line "$speed_session" 200 14000 4000)" ' ∙ 100\.0 tok/s$'
+expect 'a reset API counter clears speed' "$(speed_line "$speed_session" 100 100 5000)" "^${speed_session}$"
+expect '500ms is enough for a new reading' "$(speed_line "$speed_session" 50 600 6000)" ' ∙ 100\.0 tok/s$'
+expect 'no session id means no speed' "$(speed_line '' 50 600)" '^$'
+expect 'a session starts before quota lock contention' "$(speed_line locked 0 1000)" '^locked$'
+mkdir "$cache/refresh.lock"
+expect 'quota refresh cannot block a TPS sample' "$(speed_line locked 400 5000)" '^locked ∙ 100\.0 tok/s$'
+rmdir "$cache/refresh.lock"
+expect 'quota contention does not lose the baseline' "$(speed_line locked 200 9000)" '^locked ∙ 50\.0 tok/s$'
+mkdir "$cache/speed/locked.lock"
+cp "$cache/speed/locked.json" "$fixture/speed.before"
+expect 'a busy speed lock keeps the cached reading' "$(speed_line locked 200 9000)" '^locked ∙ 50\.0 tok/s$'
+cmp -s "$fixture/speed.before" "$cache/speed/locked.json"
+rmdir "$cache/speed/locked.lock"
+[ ! -e "$fixture/fetched" ]
+printf 'statusline output speed: passed\n'
+
 # Line 1 for a Bedrock model id holding 153000 context tokens; Context % is
 # their share of CC's auto-compact threshold
 line1() { # window settings_json [env...]; prints line 1
