@@ -112,6 +112,40 @@ class AgentConfigTests(unittest.TestCase):
             self.assertEqual(run(*self.chezmoi, "status", "--exclude=encrypted", str(target),
                                  env=self.environment).stdout, "")
 
+    def test_skill_registry_is_exact(self):
+        managed = self.source / "dot_agents/exact_skills/managed"
+        managed.mkdir(parents=True)
+        (managed / "SKILL.md").write_text("managed\n")
+        target = self.destination / ".agents/skills"
+        (target / "managed").mkdir(parents=True)
+        (target / "managed/SKILL.md").write_text("old\n")
+        (target / "extra").mkdir()
+        (target / "extra/SKILL.md").write_text("extra\n")
+        (target / ".git").mkdir()
+        (target / ".git/config").write_text("git\n")
+        self.apply(".agents/skills")
+        self.assertEqual((target / "managed/SKILL.md").read_text(), "managed\n")
+        self.assertFalse((target / "extra").exists())
+        self.assertFalse((target / ".git").exists())
+        self.apply(".agents/skills")
+        self.assertEqual(run(*self.chezmoi, "status", "--exclude=encrypted", str(target), env=self.environment).stdout, "")
+
+    def test_install_skills_rebuilds_registry_recursively(self):
+        target = self.destination / ".agents/skills"
+        (target / "commit/references").mkdir(parents=True)
+        (target / "commit/SKILL.md").write_text("old\n")
+        (target / "commit/references/extra.md").write_text("extra\n")
+        (target / "extra").mkdir()
+        (target / "extra/SKILL.md").write_text("extra\n")
+        run(str(ROOT / "scripts/install-skills"), env=self.environment)
+        source = ROOT / "agent-policy/dot_agents/exact_skills/commit/SKILL.md"
+        self.assertEqual((target / "commit/SKILL.md").read_text(), source.read_text())
+        self.assertFalse((target / "commit/references").exists())
+        self.assertFalse((target / "extra").exists())
+        before = (target / "commit/SKILL.md").read_bytes()
+        run(str(ROOT / "scripts/install-skills"), env=self.environment)
+        self.assertEqual((target / "commit/SKILL.md").read_bytes(), before)
+
     def test_codex_local_values_and_owned_server_replacement(self):
         current = '''model = "host-model"
 model_provider = "host-provider"

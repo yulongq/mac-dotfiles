@@ -16,13 +16,15 @@ The environment uses Zsh with YAML-defined abbreviations and pinned plugin archi
 | `maintenance/` | Upstream sources, review cursors, and pending adoption decisions |
 | `.agents/skills/` | Repository workflows, shared with Claude Code through `.claude/skills` |
 | `tests/` | Isolated rendering, shell, and lifecycle checks |
-| `agent-policy/` | Independently configured Agent instructions, settings, hooks, and skills |
+| `scripts/` | Validation, live-target check, and skill-rebuild entry points |
+| `agent-policy/` | Independently configured Agent instructions, settings, hooks, and exact skill registry |
 | `docs/` | Environment setup, ownership, and configuration lifecycle |
+| `LESSONS.md` | Verified failure mechanisms and the checks that prevent them |
 | `licenses/` | Third-party license notices |
 
 ## Validate
 
-With chezmoi 2.73.1 or newer, Python 3.11+, and the shell dependencies installed, run:
+With chezmoi 2.73.1 or newer, Python 3.11+, Ruby, and the shell dependencies installed, run:
 
 ```sh
 scripts/validate
@@ -41,7 +43,7 @@ Use [review-upstreams](.agents/skills/review-upstreams/SKILL.md) to refresh the 
 The skills stay in this checkout, support automatic discovery, and can also be invoked by name. Validate their structure, links, and CLI contracts with:
 
 ```sh
-ruby agent-policy/dot_agents/skills/scripts/validate-skills.rb --root .agents/skills --smoke
+ruby agent-policy/dot_agents/exact_skills/scripts/validate-skills.rb --root .agents/skills --smoke
 ```
 
 ## Edit abbreviations

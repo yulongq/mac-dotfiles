@@ -45,7 +45,7 @@ Return `adopt`, `adapt`, `reject`, or `defer` with a short evidence-based reason
 
 ## Adopt and record when authorized
 
-Implement selected behavior in this checkout, with the relevant tests and ownership documentation. A review-only request leaves configuration sources, live targets, and review metadata unchanged. Keep deployment prerequisites and the accepted source revision explicit; if local application is requested, satisfy the [deployment and activation contract](../../../docs/lifecycle.md#apply) for each target. A new skill layout must preserve independent installed skills and must not depend on a backup directory to run.
+Implement selected behavior in this checkout, with the relevant tests and ownership documentation. A review-only request leaves configuration sources, live targets, and review metadata unchanged. Keep deployment prerequisites and the accepted source revision explicit; if local application is requested, satisfy the [deployment and activation contract](../../../docs/lifecycle.md#apply) for each target. A new skill layout must remain an exact, source-reconstructible registry and must not depend on a backup directory to run.
 
 Treat source deletion and destination retirement separately. For a field outside a fully owned subtree, confirm whether its runtime still requires it, then perform the [selected-field retirement](../../../docs/lifecycle.md#retire-or-stop-managing) only within the authorized scope. Verify exact absence and surviving local values; do not add a permanent deletion list for one-time cleanup.
 

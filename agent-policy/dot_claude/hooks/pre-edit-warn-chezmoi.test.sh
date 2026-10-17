@@ -33,7 +33,7 @@ if [[ "$config_source" == "${FIXTURE_SOURCE}/agent-policy" ]]; then
   case "$2" in
     */home/.codex/AGENTS.md) printf '%s\n' "$config_source/dot_codex/AGENTS.md.tmpl" ;;
     */home/.claude/settings.json) printf '%s\n' "$config_source/dot_claude/modify_private_settings.json" ;;
-    */home/.agents/skills/new-branch/SKILL.md) printf '%s\n' "$config_source/dot_agents/skills/new-branch/SKILL.md" ;;
+    */home/.agents/skills/new-branch/SKILL.md) printf '%s\n' "$config_source/dot_agents/exact_skills/new-branch/SKILL.md" ;;
     *) exit 1 ;;
   esac
   exit

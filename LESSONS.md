@@ -30,15 +30,15 @@ The Claude Code shell suites were outside the standard runner, and Codex tests d
 
 ## Shared skill ownership
 
-**Use the managed source inventory to define deployment and retirement scope.** The [shared skill ownership contract](agent-policy/README.md#shared-skill-ownership) defines the subset this repository reconstructs. Independently installed siblings and the registry's Git state have separate owners. Retiring a managed skill requires recovery and verification of both source and installed target, including preservation of unrelated siblings.
+**Define the shared skill registry as an exact output of source.** The [shared skill ownership contract](agent-policy/README.md#shared-skill-ownership) makes `~/.agents/skills` the target of `agent-policy/dot_agents/exact_skills`; [scripts/install-skills](scripts/install-skills) rebuilds it recursively with `rsync -a --delete`, while a selected-target chezmoi apply can leave nested extras. Back up the target before the first rebuild; add a skill to source to retain it; never edit or commit in the live registry. Retiring a skill is source deletion plus a rebuild, with target verification.
 
-The live `~/.agents/skills` registry was an independent Git checkout with uncommitted changes alongside this repository's deployed subset. A reset, clean, or whole-directory replacement would cross those ownership boundaries; deleting only a source would leave the installed skill discoverable.
+The live registry contained the managed skills and an independent Git working tree with uncommitted changes alongside unmanaged siblings. The follow-up backed up the pre-change registry and made the target a repo-rebuilt registry instead of preserving unowned siblings.
 
 ## Upstream review coverage
 
 **Record selective adoption without inventing complete review coverage.** Under the [upstream review contract](.agents/skills/review-upstreams/SKILL.md#establish-the-comparison), `observed_revision` records discovery, `reviewed_through` records fully accounted coverage, and `pending` records unresolved work with a reconsideration condition. Reconcile those records when adopting changes; an empty cursor needs the initial capability review before it can advance.
 
-The follow-up recovered the selected Pi footer and Herdr sidebar adoption, but could not establish a reconciled initial baseline. It recorded unresolved candidates and left the cursors empty. An adoption commit or a recent-window comparison alone cannot establish that baseline.
+The follow-up recovered the selected Pi footer and Herdr sidebar adoption, but could not establish a reconciled initial baseline. The later baseline review inspected the current `liby` and `joshukraine` trees at their pinned revisions, recorded the durable accepted and rejected layers in [ownership](docs/ownership.md#upstream-baseline), set `reviewed_through` to those revisions, and left unresolved candidates in `pending`; history before those revisions remains out of scope.
 
 ## Evidence boundaries
 

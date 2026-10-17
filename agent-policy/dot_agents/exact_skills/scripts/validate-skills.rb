@@ -17,8 +17,8 @@ end.parse!
 
 root = options[:root] ? Pathname.new(options[:root]).expand_path : Pathname.new(__dir__).parent
 # The script also runs from its deployed copy (~/.agents/skills/scripts), where
-# root would include independently installed skills. Resolve its owner through
-# the default home source or its separate Agent policy source.
+# root names the deployed registry rather than the source. Resolve its owner
+# through the default home source or its separate Agent policy source.
 unless options[:root]
   begin
     source_path, _stderr, status = Open3.capture3("chezmoi", "source-path", root.to_s)

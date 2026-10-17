@@ -50,7 +50,7 @@ chezmoi --source "$repo" --refresh-externals=never apply --exclude=encrypted,scr
 chezmoi --source "$repo" --refresh-externals=never status --exclude=encrypted "$target"
 ```
 
-Restart or reload the actual consumer and check its behavior. Apply again and confirm no unexplained drift. A plugin declaration is a separate target: selecting `.zshrc` alone does not install plugin archives. Package installation remains an explicit action owned by `packages/` and the selected package manager.
+Restart or reload the actual consumer and check its behavior. Apply again and confirm no unexplained drift. A plugin declaration is a separate target: selecting `.zshrc` alone does not install plugin archives. Package installation remains an explicit action owned by `packages/` and the selected package manager. The shared skill registry is a separate exact target; rebuild it with `scripts/install-skills` and follow [shared skill ownership](../agent-policy/README.md#shared-skill-ownership).
 
 Record results per target as source-validated, applied but awaiting activation, runtime-verified, or deferred, with the check or blocker. An exit code or parsed configuration proves only that stage. Verify CLI and Desktop hosts separately when both consume the setting; a process launched under another agent's sandbox is not a substitute for the normal host. Do not restart an in-use session merely to upgrade its result label.
 

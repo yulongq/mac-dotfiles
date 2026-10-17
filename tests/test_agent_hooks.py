@@ -28,7 +28,7 @@ class AgentHookTests(unittest.TestCase):
                 "home/dot_zshrc": "# shell fixture\n",
                 "agent-policy/dot_codex/AGENTS.md": "Instruction fixture.\n",
                 "agent-policy/dot_claude/modify_private_settings.json": "#!/bin/sh\ncat\n",
-                "agent-policy/dot_agents/skills/example/SKILL.md": "Skill fixture.\n",
+                "agent-policy/dot_agents/exact_skills/example/SKILL.md": "Skill fixture.\n",
             }
             for relative, content in files.items():
                 path = checkout / relative

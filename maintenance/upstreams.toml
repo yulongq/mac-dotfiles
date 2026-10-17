@@ -1,16 +1,20 @@
-# observed_revision is a discovery snapshot, not a completed review.
-# An empty reviewed_through requires an initial review before advancing the cursor.
+# observed_revision is the last discovered ref; reviewed_through records the
+# last revision whose relevant capabilities were accounted for.
+# Initial capability baseline (2026-10-17): the current tree at the revisions
+# below was reviewed for the surfaces in docs/ownership.md. History before
+# those revisions was not inspected. Rejected layers are recorded in
+# docs/ownership.md#upstream-baseline; unresolved candidates remain in pending.
 [sources.liby]
 url = "https://github.com/liby/dotfiles.git"
 ref = "refs/heads/main"
 observed_revision = "75ab9096a1568f00344fff8cc6617491e20f82f0"
-reviewed_through = ""
+reviewed_through = "75ab9096a1568f00344fff8cc6617491e20f82f0"
 
 [sources.joshukraine]
 url = "https://github.com/joshukraine/dotfiles.git"
 ref = "refs/heads/master"
 observed_revision = "cf24722e28efbc294eee806fdbab76f255449e75"
-reviewed_through = ""
+reviewed_through = "cf24722e28efbc294eee806fdbab76f255449e75"
 
 [[pending]]
 source = "liby"

@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+repo=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
+source_dir="$repo/agent-policy/dot_agents/exact_skills"
+target=${1:-"$HOME/.agents/skills"}
+case "$target" in
+  "$HOME"/*) ;;
+  *)
+    echo "Refusing target outside HOME: $target" >&2
+    exit 2
+    ;;
+esac
+[ -d "$source_dir" ] || {
+  echo "Missing skill source: $source_dir" >&2
+  exit 2
+}
+mkdir -p "$target"
+rsync -a --delete "$source_dir/" "$target/"
