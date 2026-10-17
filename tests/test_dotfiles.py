@@ -221,6 +221,31 @@ class DotfilesTests(unittest.TestCase):
         self.assertIn("history-substring-search-up", result.stdout)
         self.assertIn("ll --tree --level=2", result.stdout)
 
+    def test_herdr_sidebar_preserves_host_settings(self):
+        target = self.destination / ".config/herdr/config.toml"
+        original = '''onboarding = false
+[theme]
+name = "host-theme"
+[ui]
+copy_on_select = false
+[ui.sidebar.agents]
+row_gap = 2
+[ui.sidebar.agents.rows_by_agent]
+codex = [["agent"]]
+[worktrees]
+directory = "~/host-worktrees"
+'''
+        target.write_text(original)
+        run(*self.chezmoi, "apply", str(target))
+        expected = tomllib.loads(original)
+        expected["ui"]["sidebar"]["agents"]["rows"] = [
+            ["state_icon", "workspace", "agent", "pane"], ["terminal_title_stripped"],
+        ]
+        self.assertEqual(tomllib.loads(target.read_text()), expected)
+        before = target.read_bytes()
+        run(*self.chezmoi, "apply", str(target))
+        self.assertEqual(target.read_bytes(), before)
+
     def test_declared_shell_dependencies(self):
         brewfile = (ROOT / "packages/Brewfile").read_text()
         for name in ("fzf", "zoxide", "starship", "eza", "asdf"):

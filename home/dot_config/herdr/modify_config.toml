@@ -1,0 +1,11 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- $current := dict -}}
+{{- if .chezmoi.stdin -}}{{- $current = fromToml .chezmoi.stdin -}}{{- end -}}
+{{- $out := deepCopy $current -}}
+{{- $rows := list (list "state_icon" "workspace" "agent" "pane") (list "terminal_title_stripped") -}}
+{{- $out = setValueAtPath (list "ui" "sidebar" "agents" "rows") $rows $out -}}
+{{- if deepEqual $current $out -}}
+  {{- .chezmoi.stdin -}}
+{{- else -}}
+  {{- $out | toToml -}}
+{{- end -}}

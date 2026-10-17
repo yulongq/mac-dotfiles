@@ -18,8 +18,8 @@ The repository owns durable configuration and the instructions needed to reconst
 | Ruby editor tools | Ruby/asdf gems in `packages/ruby-gems.txt` | Install with the selected Ruby and regenerate asdf shims; Neovim commands target those shims. |
 | Python CLIs | uv tools, requirements in `packages/uv.txt` | Preserve uv's installation owner and selected Python versions. |
 | Codex / Claude / Grok | Their current vendor installations | Retain the working launchers; no Homebrew replacement or account login is performed. |
-| Pi / Oracle / DSH | Current npm-global installations | Listed as package requirements; their installed data and provider routes remain application-owned. |
-| Herdr | Local executable and application-owned preferences | Shortcuts, integrations, and worktree locations are configured in Herdr. Home configuration does not replace them. |
+| Pi / Oracle / DSH | Current npm-global installations | Listed as package requirements; their installed data and provider routes remain application-owned. The selected Pi session ID footer is managed under `agent-policy/`; other extensions retain their current owners. |
+| Herdr | Local executable and `home/dot_config/herdr/modify_config.toml` | Source manages only Agent sidebar rows, showing pane identity and terminal title. Shortcuts, integrations, themes, and worktree locations remain application-owned. |
 | Kimi, browser automation, other external skills | Existing vendor installers | Retain installation ownership and browser/daemon registration. They are not copied into the managed skill registry merely because they are installed. |
 | Neovim | `home/dot_config/nvim` with `lazy-lock.json` | Lazy installs plugins; review their normal build steps. Avante keeps Codex ACP and `<leader>av`; Copilot Chat retains its existing keys. |
 | Ghostty and kitty | `home/dot_config/ghostty`, `home/dot_config/kitty` | Retain Maple Mono Normal NF CN. Restore that exact font family through its existing font installation owner before visual acceptance. No font package or terminal update channel is changed automatically. |
