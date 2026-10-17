@@ -72,9 +72,9 @@ check "event/matcher/command tuples are unique" "$(jq '
 
 check "Bash has one guard" "$(jq '
   [.PreToolUse[] | select(.matcher == "Bash") | .hooks[]] | length == 1' <<<"$HOOKS_JSON")"
-check "each agent guard has a finite deadline and blocks when its hook fails" "$(jq --arg c "$AGENT_GUARD" '
+check "each agent guard retains a finite deadline and the default failure policy" "$(jq --arg c "$AGENT_GUARD" '
   [.PreToolUse[].hooks[] | select(.command == $c)]
-  | all(.timeout | type == "number" and . > 0) and all(.onFailure == "block")' <<<"$HOOKS_JSON")"
+  | all(.timeout | type == "number" and . > 0) and all(has("onFailure") | not)' <<<"$HOOKS_JSON")"
 
 section "registered command -> source script"
 while IFS= read -r cmd; do

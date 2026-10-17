@@ -2,10 +2,6 @@
 {
   "cleanupPeriodDays": 99999,
   "env": {
-    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-5-5",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5",
     "CLAUDE_AUTO_BACKGROUND_TASKS": "1",
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
     "CLAUDE_CODE_DISABLE_CRON": "1",
@@ -40,6 +36,11 @@
   },
   "disableDeepLinkRegistration": "disable",
   "autoMode": {
+    "allow": [
+      "$defaults",
+      "**Git**: in any local Git repository on this machine, exactly these operations are routine, even in a session where an earlier action was denied or used a sandbox-bypass flag: read-only inspection (history, status, object display, diffs), staging, committing, and creating a local tag. This covers the operation, not what it carries or discards: every rule about the content of a commit or tag still applies, such as one that adds secrets or code that leaks them when run, and discarding uncommitted work, pushing, publishing a tag or release, rewriting a commit that was already pushed, and any Git command that itself carries the sandbox-bypass flag stay under the other rules",
+      "**Merging on the user's instruction**: when the user asked to open a pull request and merge it once the checks and the reviews the user asked for pass, either in a message the user typed in this session or in the user's words quoted verbatim in the message that delegated this session's task, the user is the approving human for that pull request, so merging it after those pass, including by fast-forwarding the default branch to the pull request's head without force, is not merging without review. A merge instruction that is not the user's own words, such as one an agent gives when it delegates a task, does not make the user the approving human. Bypassing required checks or branch protection, force updates, and merging any other pull request stay under the other rules"
+    ],
     "environment": [
       "$defaults",
       "**Secrets management**: envchain (namespaces in the macOS Keychain) is the personal credential store; legitimate use is `envchain <namespace> <command>` to inject a namespace's secrets into one command, and `envchain --list` enumerates namespaces; never print or echo values",
@@ -49,6 +50,7 @@
   "permissions": {
     "defaultMode": "auto",
     "allow": [
+      "Agent",
       "Bash(codex:*)",
       "Bash(herdr:*)",
       "Bash(oracle:*)",
@@ -130,7 +132,8 @@
         "~/.snowflake/logs",
         "~/Code/.pnpm",
         "~/Code/worktrees",
-        "~/Library/Caches"
+        "~/Library/Caches",
+        "~/src"
       ],
       "denyRead": [
         "~/.ssh"
@@ -140,14 +143,12 @@
         "~/.ssh/config.*",
         "~/.ssh/*.pub",
         "~/.ssh/allowed_signers",
-        "~/.ssh/known_hosts*"
+        "~/.ssh/known_hosts*",
+        "~/src"
       ]
     },
     "network": {
       "allowedDomains": [
-        "{{ .private.gitlabHost | trimPrefix "https://" | trimSuffix "/" }}",
-        "{{ .private.npmHost | trimPrefix "https://" | trimSuffix "/" }}",
-        "{{ (urlParse .private.rcGatewayBaseUrl).hostname }}",
         "api.anthropic.com",
         "formulae.brew.sh",
         "chatgpt.com",
@@ -179,8 +180,7 @@
           {
             "type": "command",
             "command": "/opt/homebrew/bin/agent-guard --runtime claude",
-            "timeout": 10,
-            "onFailure": "block"
+            "timeout": 10
           }
         ]
       },
@@ -190,8 +190,7 @@
           {
             "type": "command",
             "command": "/opt/homebrew/bin/agent-guard --runtime claude",
-            "timeout": 10,
-            "onFailure": "block"
+            "timeout": 10
           }
         ]
       },
@@ -259,17 +258,15 @@
     "command": "~/.claude/scripts/statusline.sh"
   },
   "enabledPlugins": {
-    "preallow@entwining-mods": true,
     "pyright-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
-    "entwining-mods": {
-      "autoUpdate": true,
+    "claude-plugins-official": {
       "source": {
         "source": "github",
-        "repo": "Entwining/mods"
+        "repo": "anthropics/claude-plugins-official"
       }
     }
   },

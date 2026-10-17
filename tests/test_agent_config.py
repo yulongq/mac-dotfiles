@@ -22,8 +22,10 @@ class AgentConfigTests(unittest.TestCase):
         for name in (
             ".chezmoitemplates/claude/settings.json",
             ".chezmoitemplates/codex/config.toml",
+            ".chezmoitemplates/pi/settings.json",
             "dot_claude/modify_private_settings.json",
             "dot_codex/modify_private_config.toml",
+            "private_dot_pi/private_agent/modify_private_settings.json",
         ):
             target = self.source / name
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -37,11 +39,6 @@ class AgentConfigTests(unittest.TestCase):
             "--source", str(self.source), "--destination", str(self.destination),
             "--persistent-state", str(self.base / "state"),
             "--cache", str(self.base / "cache"), "--refresh-externals=never", "--no-tty",
-            "--override-data", json.dumps({"private": {
-                "gitlabHost": "https://git.example.invalid",
-                "npmHost": "https://npm.example.invalid",
-                "rcGatewayBaseUrl": "https://gateway.example.invalid",
-            }}),
         ]
 
     def apply(self, relative, contents=None):
@@ -59,6 +56,9 @@ class AgentConfigTests(unittest.TestCase):
             "env": {
                 "ANTHROPIC_BASE_URL": "https://route.example.invalid",
                 "HOST_SETTING": "keep",
+                "ANTHROPIC_DEFAULT_HAIKU_MODEL": "host-fast",
+                "ANTHROPIC_DEFAULT_OPUS_MODEL": "host-capable",
+                "ANTHROPIC_DEFAULT_SONNET_MODEL": "host-balanced",
                 "CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS": "60000",
             },
             "sandbox": {"network": {"allowUnixSockets": ["/synthetic/ssh.sock"]}},
@@ -69,6 +69,10 @@ class AgentConfigTests(unittest.TestCase):
         self.assertEqual(actual["modelSettings"], current["modelSettings"])
         self.assertEqual(actual["env"]["ANTHROPIC_BASE_URL"], current["env"]["ANTHROPIC_BASE_URL"])
         self.assertEqual(actual["env"]["HOST_SETTING"], "keep")
+        for alias in ("HAIKU", "OPUS", "SONNET"):
+            key = f"ANTHROPIC_DEFAULT_{alias}_MODEL"
+            self.assertEqual(actual["env"][key], current["env"][key])
+        self.assertNotIn("ANTHROPIC_DEFAULT_FABLE_MODEL", actual["env"])
         self.assertEqual(actual["env"]["CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS"], "1800000")
         self.assertEqual(actual["sandbox"]["network"]["allowUnixSockets"], ["/synthetic/ssh.sock"])
 
@@ -138,6 +142,19 @@ host_authorization = "keep"
         self.assertEqual(actual["mcp_servers"]["host_server"], {"command": "host-command"})
         self.assertNotIn("obsolete@example", actual["plugins"])
         self.assertEqual(actual["apps"]["connector_openai_pages"]["host_authorization"], "keep")
+
+    def test_pi_host_model_choices_survive(self):
+        current = {
+            "defaultProvider": "host-provider",
+            "defaultModel": "host-model",
+            "defaultThinkingLevel": "xhigh",
+            "enabledModels": ["host-provider/*"],
+            "modelThinkingLevels": {"host-provider/host-model": "xhigh"},
+        }
+        actual = json.loads(self.apply(".pi/agent/settings.json", json.dumps(current)).read_text())
+        for key, value in current.items():
+            self.assertEqual(actual[key], value)
+        self.assertEqual(actual["defaultTools"], ["+codemode"])
 
     def test_source_removal_and_explicit_retirement_have_different_effects(self):
         relative = ".codex/config.toml"

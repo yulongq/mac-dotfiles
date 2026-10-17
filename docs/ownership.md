@@ -39,13 +39,14 @@ The modifiers own how source and destination combine. Review their field boundar
 
 | Surface | Ownership and removal behavior |
 | --- | --- |
-| Claude Code `env` | Source owns each declared variable. Undeclared host routing and other variables survive. Removing a declaration leaves its destination value until explicit retirement. |
+| Claude Code `env` | Source owns each declared variable. Host routes and `ANTHROPIC_DEFAULT_*_MODEL` mappings remain undeclared and survive. Removing a declaration leaves its destination value until explicit retirement. |
 | Claude Code `sandbox.network.allowUnixSockets` | The existing host list survives, including an intentionally empty list. A missing list is seeded with the sandbox temporary directory and the 1Password SSH socket. Changing the seed does not update existing hosts. |
 | Claude Code `model` and `modelSettings` | A missing model is seeded as `opus`; subsequent model choices and saved effort levels remain application-owned. |
 | Other Claude Code settings | Declared top-level values replace their complete subtrees. Nested removals apply; removing a top-level declaration stops management without deleting its destination value. Undeclared top-level settings survive. |
 | Codex `plugins`, `permissions.development`, and source-declared MCP servers | Source replaces these complete subtrees, removing stale nested fields. `node_repl.env` and `node_repl.env_vars` remain Desktop-owned. Undeclared MCP servers survive. |
 | Other Codex settings | Declared fields are deep-overlaid. Model selection, reasoning effort, provider routes, undeclared context-window overrides, and per-app authorization remain local. Source removal alone does not remove a destination field. |
 | Codex legacy sandbox selectors | While `default_permissions` is declared, the modifier removes `sandbox_mode` and `sandbox_workspace_write` because they can override that profile. This conditional invariant is distinct from a one-time retirement. |
+| Pi settings | Source replaces declared top-level values. Provider, model, thinking level, enabled models, and per-model thinking levels remain undeclared and host-owned. |
 
 The personal baseline keeps Codex copy-on-select enabled and displays context use, context size, the five-hour limit, and thread ID alongside model, directory, and branch. Claude Code's retry watchdog is capped at 1,800,000 milliseconds; a larger value permits longer retry waits. Socket seeds select 1Password without installing or changing the SSH provider. These choices are reviewed independently of unrelated permission changes.
 
