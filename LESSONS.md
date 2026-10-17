@@ -22,6 +22,12 @@ The live home was missing `~/Brewfile` and the managed `new-branch` skill despit
 
 **Declare the implementation a helper needs and run that helper through the installed shell.** A command name's presence does not establish support for its flags. `ct` needed Universal Ctags while the shell found BSD ctags. Its repair required the package declaration, actual installation, fresh-shell resolution, and generation of project and Bundler dependency tags.
 
+## Destructive target paths
+
+**Resolve the effective path before a recursive delete.** A string-prefix check does not constrain a trailing separator, `..`, or a symlinked parent, and `rsync --delete` acts on the resolved location. Resolve `HOME` and the target, require the exact registry path, re-check after creating it, and test rejection with `$HOME/`, `..`, and a symlinked parent while asserting that outside content survives.
+
+The install helper accepted `$HOME/` and paths that resolved outside HOME, deleting a temporary home root and external placeholders. `test_install_skills_rejects_unsafe_targets` now covers those cases.
+
 ## The validation entry point
 
 **Put regression checks in the command that maintainers actually run.** [scripts/validate](scripts/validate) is the shared entry point for configuration, hook, statusline, and skill checks. Adding a test file requires connecting it to that gate and accounting for its dependencies; running a subset does not establish that the gate passed.

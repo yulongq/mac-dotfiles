@@ -2,17 +2,54 @@
 set -eu
 repo=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
 source_dir="$repo/agent-policy/dot_agents/exact_skills"
-target=${1:-"$HOME/.agents/skills"}
-case "$target" in
-  "$HOME"/*) ;;
-  *)
-    echo "Refusing target outside HOME: $target" >&2
-    exit 2
-    ;;
-esac
+target=${1-"$HOME/.agents/skills"}
+
+[ -n "${HOME:-}" ] || {
+  echo "HOME is not set" >&2
+  exit 2
+}
+[ -n "$target" ] || {
+  echo "Refusing empty target" >&2
+  exit 2
+}
+command -v python3 >/dev/null 2>&1 || {
+  echo "python3 is required to resolve the target" >&2
+  exit 2
+}
+
+resolve_path() {
+  python3 - "$1" <<'PY'
+import os
+import sys
+print(os.path.realpath(os.path.expanduser(sys.argv[1])))
+PY
+}
+
+home_real=$(resolve_path "$HOME") || {
+  echo "Cannot resolve HOME: $HOME" >&2
+  exit 2
+}
+target_real=$(resolve_path "$target") || {
+  echo "Cannot resolve target: $target" >&2
+  exit 2
+}
+expected="$home_real/.agents/skills"
+if [ "$target_real" != "$expected" ]; then
+  echo "Refusing target other than $HOME/.agents/skills: $target" >&2
+  exit 2
+fi
+target="$expected"
 [ -d "$source_dir" ] || {
   echo "Missing skill source: $source_dir" >&2
   exit 2
 }
 mkdir -p "$target"
+target_real_after=$(resolve_path "$target") || {
+  echo "Cannot resolve target after creating it: $target" >&2
+  exit 2
+}
+if [ "$target_real_after" != "$expected" ]; then
+  echo "Refusing target that changed while preparing: $target" >&2
+  exit 2
+fi
 rsync -a --delete "$source_dir/" "$target/"

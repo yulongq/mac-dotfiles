@@ -4,6 +4,7 @@
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 import tomllib
 import unittest
@@ -145,6 +146,55 @@ class AgentConfigTests(unittest.TestCase):
         before = (target / "commit/SKILL.md").read_bytes()
         run(str(ROOT / "scripts/install-skills"), env=self.environment)
         self.assertEqual((target / "commit/SKILL.md").read_bytes(), before)
+
+    def test_install_skills_rejects_unsafe_targets(self):
+        outside = self.base / "outside"
+        outside.mkdir()
+        (outside / "keep.txt").write_text("keep\n")
+        home_keep = self.destination / "keep-home.txt"
+        home_keep.write_text("keep\n")
+        agents = self.destination / ".agents"
+        agents.mkdir()
+        (agents / "keep.txt").write_text("keep\n")
+        cases = (
+            ("home root", str(self.destination) + "/"),
+            ("direct outside", str(outside)),
+            ("dot-dot outside", str(self.destination / ".." / "outside")),
+            ("agents directory", str(agents)),
+        )
+        for label, target in cases:
+            with self.subTest(label=label):
+                result = subprocess.run(
+                    [str(ROOT / "scripts/install-skills"), target],
+                    text=True,
+                    capture_output=True,
+                    env=self.environment,
+                )
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertTrue(home_keep.exists(), label)
+                self.assertTrue((outside / "keep.txt").exists(), label)
+                self.assertTrue((agents / "keep.txt").exists(), label)
+
+        (agents / "skills").symlink_to(outside)
+        result = subprocess.run(
+            [str(ROOT / "scripts/install-skills")],
+            text=True,
+            capture_output=True,
+            env=self.environment,
+        )
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertTrue((outside / "keep.txt").exists())
+
+        shutil.rmtree(agents)
+        agents.symlink_to(outside)
+        result = subprocess.run(
+            [str(ROOT / "scripts/install-skills")],
+            text=True,
+            capture_output=True,
+            env=self.environment,
+        )
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertTrue((outside / "keep.txt").exists())
 
     def test_codex_local_values_and_owned_server_replacement(self):
         current = '''model = "host-model"
