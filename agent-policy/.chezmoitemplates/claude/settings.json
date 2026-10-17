@@ -1,0 +1,293 @@
+{{- /* Read dot_claude/modify_private_settings.json before editing this template; the modifier controls how these values are merged into the live file. */ -}}
+{
+  "cleanupPeriodDays": 99999,
+  "env": {
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5-1",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-5-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5",
+    "CLAUDE_AUTO_BACKGROUND_TASKS": "1",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_CRON": "1",
+    "CLAUDE_CODE_DISABLE_MOUSE": "1",
+    "CLAUDE_CODE_ENABLE_CFC": "0",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "125000",
+    "CLAUDE_CODE_FORK_SUBAGENT": "1",
+    "CLAUDE_CODE_RETRY_WATCHDOG": "1",
+    "CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS": "1800000",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_EXTRA_USAGE_COMMAND": "1",
+    "DISABLE_FEEDBACK_COMMAND": "1",
+    "DISABLE_TELEMETRY": "1",
+    "ENABLE_TOOL_SEARCH": "1",
+    "NODE_USE_ENV_PROXY": "1"
+  },
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "includeGitInstructions": false,
+  "enableArtifact": false,
+  "disableRemoteControl": true,
+  "disableClaudeAiConnectors": true,
+  "disableBundledSkills": true,
+  "syncClaudeAiSkills": false,
+  "syncClaudeAiPlugins": false,
+  "skillOverrides": {
+    "auto-mode-setup": "off"
+  },
+  "disableDeepLinkRegistration": "disable",
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "**Secrets management**: envchain (namespaces in the macOS Keychain) is the personal credential store; legitimate use is `envchain <namespace> <command>` to inject a namespace's secrets into one command, and `envchain --list` enumerates namespaces; never print or echo values",
+      "**Scope**: the user's own non-public scope is this machine and the accounts and services whose content reaches only the user, the user's own tools, and the services the user chose for the task; a service that stores content at the user's direction is its custodian, not a reader; a user-installed tool that works inside the user's account, and the agent runtime or model route the user has set up on this machine for the task or as a standing choice, are the user's own; an application that sends the content elsewhere without the user choosing it is an outside reader"
+    ]
+  },
+  "permissions": {
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(codex:*)",
+      "Bash(herdr:*)",
+      "Bash(oracle:*)",
+      "Bash(pi:*)",
+      "Bash(snow:*)",
+      "Edit",
+      "LSP",
+      "mcp__chrome-devtools__*",
+      "Read",
+      "Skill",
+      "ToolSearch",
+      "WebFetch",
+      "WebSearch",
+      "Write"
+    ],
+    "deny": [
+      "Bash(*.claude/.credentials.json*)",
+      "Bash(*.npmrc*)",
+      "Bash(*.zprofile*)",
+      "Bash(*.zsh_history*)",
+      "Bash(*auth.json*)",
+      "Bash(*gh auth token*)",
+      "Bash(*private-keys-v1.d*)",
+      "DesignSync",
+      "Edit(~/.claude/.credentials.json*)",
+      "Edit(~/.gnupg/private-keys-v1.d/**)",
+      "Edit(~/.npmrc*)",
+      "Edit(~/.zprofile*)",
+      "Edit(~/*/auth.json*)",
+      "EnterPlanMode",
+      "ExitPlanMode",
+      "NotebookEdit",
+      "PushNotification",
+      "Read(**/.env.*.local)",
+      "Read(**/.env.local*)",
+      "Read(**/.env)",
+      "Read(~/.aws/credentials*)",
+      "Read(~/.claude/.credentials.json*)",
+      "Read(~/.gnupg/private-keys-v1.d/**)",
+      "Read(~/.zsh_history*)",
+      "Read(~/*/auth.json*)",
+      "RemoteTrigger",
+      "ReportFindings",
+      "ScheduleWakeup"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "excludedCommands": [
+      "chezmoi:*",
+      "codex:*",
+      "docker:*",
+      "git:*",
+      "herdr:*",
+      "oracle:*",
+      "snow:*"
+    ],
+    "filesystem": {
+      "allowWrite": [
+        "{{ output "getconf" "DARWIN_USER_TEMP_DIR" | trim | trimSuffix "/" }}",
+        "/private/tmp/.pnpm-store",
+        "/private/tmp/pnpm-store-operation-locks-{{ .chezmoi.uid }}",
+        "~/.bun",
+        "~/.cache",
+        "~/.cargo",
+        "~/.claude",
+        "~/.codex",
+        "~/.config",
+        "~/.gnupg/trustdb.gpg",
+        "~/.local/bin",
+        "~/.local/share/uv",
+        "~/.npm",
+        "~/.oracle",
+        "~/.pi",
+        "~/.pnpm-store",
+        "~/.proto",
+        "~/.rustup",
+        "~/.snowflake/logs",
+        "~/Code/.pnpm",
+        "~/Code/worktrees",
+        "~/Library/Caches"
+      ],
+      "denyRead": [
+        "~/.ssh"
+      ],
+      "allowRead": [
+        "~/.ssh/config",
+        "~/.ssh/config.*",
+        "~/.ssh/*.pub",
+        "~/.ssh/allowed_signers",
+        "~/.ssh/known_hosts*"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "{{ .private.gitlabHost | trimPrefix "https://" | trimSuffix "/" }}",
+        "{{ .private.npmHost | trimPrefix "https://" | trimSuffix "/" }}",
+        "{{ (urlParse .private.rcGatewayBaseUrl).hostname }}",
+        "api.anthropic.com",
+        "formulae.brew.sh",
+        "chatgpt.com",
+        "*.claude.com",
+        "context7.com",
+        "*.context7.com",
+        "github.com",
+        "*.github.com",
+        "*.githubusercontent.com",
+        "cli.inngest.com",
+        "nodejs.org",
+        "registry.npmjs.org"
+      ],
+      "allowLocalBinding": true,
+      "allowMachLookup": [
+        "com.apple.trustd.agent"
+      ],
+      "allowUnixSockets": [
+        "/private/tmp/claude-{{ .chezmoi.uid }}",
+        "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+      ]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/homebrew/bin/agent-guard --runtime claude",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/homebrew/bin/agent-guard --runtime claude",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/pre-edit-warn-chezmoi.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/post-bash-scan-secrets.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/post-bash-scan-secrets.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/pre-compact-instructions.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|clear|compact|fork)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '{{ .chezmoi.homeDir }}/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/scripts/statusline.sh"
+  },
+  "enabledPlugins": {
+    "preallow@entwining-mods": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "entwining-mods": {
+      "autoUpdate": true,
+      "source": {
+        "source": "github",
+        "repo": "Entwining/mods"
+      }
+    }
+  },
+  "spinnerTipsEnabled": false,
+  "tui": "default",
+  "spinnerVerbs": {
+    "mode": "replace",
+    "verbs": [
+      "Vibing"
+    ]
+  },
+  "autoCompactWindow": 350000,
+  "promptCacheTtl": "1h",
+  "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
+  "showThinkingSummaries": true,
+  "showTurnDuration": false,
+  "timeFormat": "24-hour",
+  "skipAutoPermissionPrompt": true,
+  "skipWorkflowUsageWarning": true
+}

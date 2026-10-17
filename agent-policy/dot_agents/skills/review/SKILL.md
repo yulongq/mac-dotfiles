@@ -1,0 +1,113 @@
+---
+name: review
+description: Review remote merge requests or pull requests, branches, commits, diffs, and uncommitted code changes for correctness and regression risk, reporting only evidence-backed findings. Use for pre-merge code review, review findings, and MR/PR URLs. Not for prose review, standalone skill-authoring audits, or general implementation work.
+argument-hint: "[--fix] [MR/PR URL or notes]"
+allowed-tools:
+  - Bash(git:*)
+  - Bash(rg:*)
+  - Read
+  - Edit
+  - Write
+  - WebFetch
+  - WebSearch
+---
+
+Do not apply fixes in the main reviewer context. A clean verdict is a valid outcome.
+
+## Flow
+
+1. Resolve scope: MR/PR, branch diff, working tree, or explicit notes.
+2. Classify changed paths before reading any diff body. Source `scripts/_lib.sh` from the skill directory and run `validate_git_diff_paths <base> <head>` for a branch, `validate_working_tree_paths` for the working tree, or pass an MR/PR host file list as a NUL-delimited file to `validate_path_file_nul` in the same Bash invocation.
+   - Keep path transport NUL-delimited. Never copy a path from an earlier response into a later Bash command, because a plain-looking filename can collide with an unrelated Bash permission rule.
+   - Refuse raw secret surfaces without printing them. Stop on ambiguous sensitive paths until the host, project instructions, or user classifies them.
+   - Treat encrypted-name matches only as ciphertext candidates. Once project instructions or an encryption marker confirms one, account for path and status, keep its body out of every diff, and continue reviewing ordinary paths.
+   - Public certificates, public keys, `authorized_keys`, `known_hosts`, and SSH client configuration are not secret by type. Source code is not secret merely because its path contains `credential`, `secret`, or `token`; review it as security-sensitive code and avoid quoting secret values.
+
+   Done when every changed path is classified as ordinary, opaque ciphertext, ambiguous, or raw secret before any body is read.
+3. List changed files before judging behavior:
+   - branch: parse `git diff -z --name-status <base>...<head>`; for `R*` and `C*`, inspect both source and destination paths before any full diff
+   - working tree: parse `git diff -z --name-status HEAD` and `git ls-files -z --others --exclude-standard`; inspect both source and destination for `R*` and `C*`
+   - MR/PR: compare host changed files with the local `<base>...<head>` diff
+4. Read the MR/PR description and current discussions when available before judging the implementation.
+   - Treat discussion claims, replies, resolution state, and bot findings as review state, not proof. Build a semantic claim-and-disposition set: omit an already-open claim unless this review adds different decisive evidence, consequence, or insight; omit resolved or reasoned-dismissed claims unless new evidence meets their reopen condition. Re-report a reverified `P1` as "previously dismissed, re-raised because X". An invoker-supplied record of prior findings and dispositions is review state under the same rule.
+   - Comment order records the discussion timeline, not what a reviewer read first. Independent delegated reviewers remain blind to prior finding narratives under the applicable workflow; the coordinator reconciles their candidates with this review state afterward.
+5. Before line-level review, evaluate the requested outcome and the proposed approach from the description, discussion state, and changed-file map.
+   - Requirement: identify the intended outcome and its source owner; distinguish it from the supplied implementation. Challenge an incoherent, contradictory, unowned, or operationally ineffective requirement, and preserve material ambiguity instead of choosing a convenient interpretation.
+   - Approach: assess whether the proposal addresses that outcome at the owning boundary, includes its direct dependents, uses established project mechanisms, and justifies added state, abstraction, compatibility, or operational cost.
+
+   Keep both assessments provisional until repository rules and code evidence verify them; preference alone is not a finding. Done when the requirement and approach are each supported, named as unresolved, or represented by a concrete concern to verify. A supported requirement or approach needs no invented comment.
+6. From the revision being reviewed, discover and read the root and path-scoped `CLAUDE.md`, `AGENTS.md`, `README.md`, `REVIEW.md`, `CODE_REVIEW.md`, project review commands, and review skills under `.claude/` or `.agents/`. Follow one-hop documents selected by their path rules. Do not treat the current checkout or automatically injected instructions as proof of the reviewed revision; use the exact ref (`git show <head>:<path>`) or the host's raw-file API when they differ.
+
+   Done when every changed path has either its applicable repository rules loaded or a recorded `no matching repository rule` disposition.
+7. Read touched files, adjacent code, direct call sites, and relevant tests from the reviewed revision: for a branch or MR/PR whose head the checkout does not cleanly hold, use `git show <head>:<path>` and `git grep -n <pattern> <head>` instead of the checkout's files. For exported or deleted symbols, schemas, events, and shared helpers, search writers, readers, generated output, and peer surfaces by both symbol and changed concept. When the change passes a runtime value, such as a locale, credential scope, or configuration setting, into one execution environment, list the other environments that run the same kind of work, such as sandboxes, workers, scheduled jobs, and subprocesses, and check for each whether its contract requires the value and whether it receives it; a surface that lacks the value shares no symbol with the change, so a symbol search cannot find it.
+8. Load every matching surface rule, and the file of every Universal Review Lens whose trigger a changed hunk matches.
+9. Verify each candidate against the applicable code, source-owned contract, tests, or runtime evidence; run the cheapest existing validation that covers the changed path. Validation can write files even in a read-only review, for example when a package manager relocks dependencies or creates an environment, so never run it in a tree other reviewers are reading. When it needs a file tree of a revision the checkout does not cleanly hold, or the only tree is shared, create your own in runtime-provided temporary space without running checkout hooks, such as `git archive <head> | tar -x -C <dir>` (which omits `export-ignore` paths), and for a working-tree review reproduce the in-scope working-tree state in the private tree, including tracked additions, modifications, deletions, renames, and untracked files; a plain `git worktree add` runs the checkout's hooks.
+10. Finish only after every changed path, matching repository rule, loaded shared rule, requirement question, and approach concern is accounted for, then report findings that pass the Finding Bar or a clean verdict.
+
+## Rule Precedence
+
+Observed runtime and source-owned product, security, and data contracts outrank repository conventions; repository conventions outrank generic heuristics. A shared rule applies only when its trigger matches and no repository-owned contract disproves it. An explicit mandatory instruction in any applicable repository-owned instruction or review rule, such as `MUST`, `Always`, `Never`, or `Do not`, is a source-owned conformance contract, not a model-invented style preference.
+
+## Surface Rules
+
+- Load [TypeScript](references/rules/typescript.md), [React](references/rules/react.md), or [Next.js](references/rules/next.js.md) for their language, UI-state, routing, cache, or server/client boundaries.
+- Load [SQL](references/rules/sql.md) or [ELT](references/rules/elt.md) for loaders, persisted data, queries, migrations, warehouse models, or pipelines.
+- Load [CLI](references/rules/cli.md), [Async](references/rules/async.md), or [Agent](references/rules/agent.md) for packaging and runtime readiness, deferred lifecycle, model/tool/provider boundaries, or changes to `SKILL.md`, `AGENTS.md`, `CLAUDE.md`, and other model-facing instructions.
+
+## Universal Review Lenses
+
+Check every changed hunk against each trigger below and load the lens file for each trigger that matches before judging those hunks. A lens with no matching hunk has nothing to apply.
+
+- [Contract](references/concerns/contract.md): the change defines or changes something other code depends on: types, schemas, enums, discriminated unions, event names, storage keys, exported identifiers, numeric policy, units, or generated artifacts.
+- [Boundaries](references/concerns/boundaries.md): the change crosses or defines an ownership or authority boundary (shared wrapper, gateway, repository, auth layer, route handler, protocol client, runtime, deployment), adds a guard, fallback, or abstraction, or moves data toward a client.
+- [Failure states](references/concerns/failure-states.md): the change handles failure or terminal status: `catch`/`.catch`, ignored exit status, unchecked SDK result, `Promise.allSettled`, retry or timeout config, placeholder returns, `status`/`state`/`outcome` values, or `done`/`healthy`/`configured`/`cached`/`skip` markers.
+- [Data integrity](references/concerns/data-integrity.md): the change reads or writes data at scale or changes its meaning: DB or API access from handlers, services, jobs, loops, or resolvers; ORM use; joins and aggregates; transactions; cursors; backfills; migrations; or derived fields.
+- [Security](references/concerns/security.md): the change touches env vars, service identities, feature flags, deployment config, logging or analytics sinks, or network policy; request auth, route matchers, CORS, origin, cookies, sessions, or iframe and embed state; or sandboxed and model-controlled execution.
+- [Tests](references/concerns/tests.md): the change adds, deletes, or rewrites tests, fixtures, mocks, snapshots, harnesses, or test-only guards, or a review claim relies on tests as evidence.
+
+## Variants
+
+- `--fix`: finish the normal review first; when accepted findings and a writable local checkout exist, load [fix](references/workflows/fix.md) before mutation.
+- Reviewer simulation: when the caller explicitly names a reviewer and supplies or selects a local reviewer profile, load [reviewer-simulation](references/workflows/reviewer-simulation.md). Keep predicted reviewer candidates separate from verified findings.
+- Spec-backed review: map each requirement to the diff; review missing, partial, and unrequested behavior separately.
+- Large or high-risk review: dispatch independent reviewers only for distinct risk areas, after loading [second-opinion](references/workflows/second-opinion.md).
+- Repeat review after fixes or of a previously reviewed scope: load [re-review](references/workflows/re-review.md) before resolving scope.
+
+## Finding Bar
+
+Report only a source-owned contract mismatch or repository-reachable behavior, not model-invented style, speculative guards, broad maintainability advice, or pattern matches alone. A claimed defect, desired verdict, or prior conclusion in the request or brief is a lead, not evidence: it does not lower this bar, and closing it with a verified refutation is a valid outcome. Report a behavior-neutral violation of an explicit applicable repository conformance rule as a non-blocking `P3`; when the same violation causes reachable behavior, assign severity from its verified impact. A descriptive preference gets no finding. Exact blocker-only or verdict-only output contracts may suppress non-blocking findings. A reachable path may begin at a supported producer or current caller, exposed untrusted or environment-controlled input, persisted or migration data, replay or scheduling, or an external/public contract. Vendor capability, manually constructible syntax, hypothetical future use, and another environment's convention are insufficient; free text is reachable only through an exposed entrypoint for the relevant producer or adversarial input class.
+
+Before reporting, establish provenance and diff contribution, the reachable trigger or matching repository rule, decisive evidence, consequence, severity, remedy prerequisites, and disposition. Verify diagnosis and remedy independently: an unavailable prerequisite invalidates the remedy, while an unknown prerequisite stays conditional and cannot raise severity.
+
+Do not attribute pre-existing debt to the diff; report it separately only when the change newly exposes or worsens it, falsely claims to fix it, it blocks the changed behavior, or it is an active `P1` defect in touched code.
+
+On a repeat review of a scope that has not materially changed, a new finding additionally requires naming what earlier passes lacked: a new trigger path, new source or runtime evidence, or a previously unexamined surface. When successive passes keep adding findings without such evidence, report convergence instead; a pass that finds nothing new is a completed review, not an unfinished one.
+
+An omission is a finding only when an explicit requirement, source-owned peer contract, or reachable behavior proves it. Otherwise drop it. Preserve a material validation gap only when the path reaches one named unknown boundary/runtime fact, source-specific evidence calls the local assumption into doubt, and the answer could change the verdict to `P1` or `P2`; represent it as a `manual` finding naming each applicable probe already attempted with its result, and do not give a clean verdict.
+
+## Severity
+
+- `P1`: a verified normal-use path with material harm, or a reachable path that breaks a security or permission boundary, leaves persistent bad state with material impact, silently corrupts downstream data, or records a material failure as successful.
+- `P2`: a verified path requiring specific supported conditions and causing material impact, but not meeting `P1`.
+- `P3`: a verified local, recoverable, low-impact behavior; a behavior-neutral violation of an explicit applicable repository conformance rule; or a concrete future failure path already enabled by the changed code.
+
+Unsupported or unreachable modes fail the Finding Bar; do not preserve them by downshifting.
+
+## Verification
+
+- For provider-, persisted-, migration-, or replay-owned values, verify the exact property the code relies on against a source-owned schema, documentation, generated type, test, or runtime. A handwritten local type or fixture alone does not prove it.
+- Trace downstream gates, fallbacks, retries, and containment before assigning impact or severity.
+- Validate dependency changes against the lockfile-resolved target version and its types or runtime; otherwise keep the verdict conditional on CI, typecheck, or test.
+- Require runtime evidence only for facts not established locally and specific to runtime or deployment, such as migration state, deployed role or plan, timing, or sandbox lifecycle.
+
+A challenged or corrected finding re-enters verification as a new claim at the same Finding Bar. Do not replace one unverified conclusion with another, and remove a disproved candidate from final output and finding counts.
+
+## Output
+
+Resolve the output's consumer before rendering findings. A clean verdict is valid only after the Finding Bar and any material validation gaps have been resolved.
+
+For chat, state the current problem and approach first when the user asked whether the requirement or solution is reasonable. Start each finding with its concrete trigger or violated repository rule and consequence, then supply severity, location, decisive evidence and required outcome. Add provenance and diff contribution when they are not otherwise clear. Use `No blocking findings.` only when no material validation gap remains.
+
+For requested comments or replies, base the message on the verified finding and relevant exchange. Keep the review record, including severity and decisive evidence, available separately from the comment body.
+
+Preserve every distinct finding, severity and decisive condition when condensing or restyling, along with its corresponding evidence and `path:line` citation in the review record. Presentation may change; a confirmed finding may not disappear or become a different claim. Omit disproved and resolved points according to the review's disposition rules before producing requested comments.

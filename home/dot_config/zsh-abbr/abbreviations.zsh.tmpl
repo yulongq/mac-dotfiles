@@ -1,0 +1,6 @@
+# Generated from home/.chezmoidata/abbreviations.yaml; edit that source.
+{{- range $category, $entries := .abbreviations }}
+{{- range $name, $entry := $entries }}
+abbr {{ $name | shellQuote }}={{ $entry.command | shellQuote }}
+{{- end }}
+{{- end }}

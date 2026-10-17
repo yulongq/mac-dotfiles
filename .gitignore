@@ -1,0 +1,8 @@
+.DS_Store
+.env
+.env.local
+*.pyc
+__pycache__/
+.local/
+node_modules/
+home/**/lazy-lock.json.bak

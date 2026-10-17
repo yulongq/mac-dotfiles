@@ -1,0 +1,20 @@
+# observed_revision is a discovery snapshot, not a completed review.
+# An empty reviewed_through requires an initial review before advancing the cursor.
+[sources.liby]
+url = "https://github.com/liby/dotfiles.git"
+ref = "refs/heads/main"
+observed_revision = "75ab9096a1568f00344fff8cc6617491e20f82f0"
+reviewed_through = ""
+
+[sources.joshukraine]
+url = "https://github.com/joshukraine/dotfiles.git"
+ref = "refs/heads/master"
+observed_revision = "cf24722e28efbc294eee806fdbab76f255449e75"
+reviewed_through = ""
+
+[[pending]]
+source = "liby"
+revision = "4323b63b9b16cdd38f86bcd376ba9e3100902084"
+change = "Retire the global Codex model_context_window override"
+reason = "An upstream deletion does not establish whether a host's selected model and provider still require its override. The modifier preserves this undeclared field."
+revisit_when = "Before changing context-window configuration, verify the selected model's effective window in each installed Codex host, then decide and verify exact destination cleanup."

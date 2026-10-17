@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#
+# Homebrew bundle install
+# Usage: bb
+
+set -euo pipefail
+
+if [[ -e "${HOME}/Brewfile" ]]; then
+  echo "-> Bundling Brewfile located at ${HOME}/Brewfile"
+  brew bundle --no-upgrade --file "${HOME}/Brewfile"
+else
+  echo "Brewfile not found."
+  exit 1
+fi

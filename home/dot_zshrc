@@ -1,0 +1,85 @@
+eval "$(env -u HOMEBREW_BREW_FILE -u HOMEBREW_PATH /opt/homebrew/bin/brew shellenv)"
+
+source "$HOME/.config/zsh/environment.zsh"
+source "$HOME/.config/zsh/source.zsh"
+
+# Keep the existing private input local; it is never part of this repository.
+if [[ -f "$HOME/.env" ]]; then
+  () {
+    setopt local_options allexport
+    source "$HOME/.env"
+  }
+fi
+
+typeset -U path fpath
+path=("${ASDF_DATA_DIR:-$HOME/.asdf}/shims" "$HOME/.npm-global/bin" "$HOME/.local/bin" "$HOME/.bin" $path)
+path+=("$HOME/.lmstudio/bin")
+path=("$HOME/.kimi-code/bin" "$HOME/.grok/bin" "$HOME/.local/share/pnpm/bin" $path)
+export ASDF_NODEJS_LEGACY_FILE_DYNAMIC_STRATEGY=latest_installed
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export NPM_CONFIG_PREFIX="$HOME/.npm-global"
+export npm_config_prefix="$NPM_CONFIG_PREFIX"
+
+fpath=("${ASDF_DATA_DIR:-$HOME/.asdf}/completions" "$HOME/.grok/completions/zsh" "$HOME/.docker/completions" $fpath)
+autoload -Uz compinit
+() {
+  setopt local_options extendedglob
+  if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+    compinit && touch ~/.zcompdump
+  else
+    compinit -C
+  fi
+}
+zmodload zsh/complist
+zstyle ':completion:*' menu yes select
+zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
+_comp_options+=(globdots)
+zle_highlight=('paste:none')
+setopt AUTO_CD GLOB_DOTS NOMATCH MENU_COMPLETE EXTENDED_GLOB INTERACTIVE_COMMENTS NO_BEEP
+
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=1000000000
+SAVEHIST=1000000000
+setopt EXTENDED_HISTORY INC_APPEND_HISTORY SHARE_HISTORY
+setopt HIST_EXPIRE_DUPS_FIRST HIST_IGNORE_DUPS HIST_IGNORE_ALL_DUPS HIST_FIND_NO_DUPS
+setopt HIST_IGNORE_SPACE HIST_SAVE_NO_DUPS HIST_REDUCE_BLANKS HIST_VERIFY
+
+export ABBR_USER_ABBREVIATIONS_FILE="$HOME/.config/zsh-abbr/abbreviations.zsh"
+source /opt/homebrew/share/zsh-abbr/zsh-abbr.zsh
+source "$HOME/.config/zsh/aliases.zsh"
+source "$HOME/.config/zsh/functions.zsh"
+source "$HOME/.config/zsh/docker.sh"
+alias ls='eza --group-directories-first --icons=auto'
+alias ll='ls -lh --git'
+alias la='ll -a'
+alias tree='ll --tree --level=2'
+
+source "$HOME/.config/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
+source "$HOME/.config/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh"
+HISTORY_SUBSTRING_SEARCH_PREFIXED=1
+HISTORY_SUBSTRING_SEARCH_FUZZY=1
+unset HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+bindkey '^H' backward-kill-word
+bindkey -M menuselect '?' history-incremental-search-forward
+bindkey -M menuselect '/' history-incremental-search-backward
+bindkey -s '^x' '^usource ~/.zshrc\n'
+
+eval "$(fzf --zsh)"
+eval "$(zoxide init zsh)"
+[[ "$TERM_PROGRAM" == Apple_Terminal ]] || eval "$(starship init zsh)"
+[[ ! -r "$HOME/.orbstack/shell/init.zsh" ]] || source "$HOME/.orbstack/shell/init.zsh"
+if [[ -n "$OTTY_SHELL_INTEGRATION" && -r "$OTTY_SHELL_INTEGRATION/otty-integration.zsh" ]]; then
+  source "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
+fi
+
+[[ ! -r "$HOME/.zshrc.local" ]] || source "$HOME/.zshrc.local"
+[[ ! -r "$HOME/.pathrc" ]] || source "$HOME/.pathrc"
+source "$HOME/.config/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
+cdf() {
+  local file
+  file=$(fd --type f | fzf) || return
+  cd "$(dirname "$file")"
+}

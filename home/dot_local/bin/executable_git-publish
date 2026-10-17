@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+#
+# Push current branch to origin and set up tracking
+#
+# Usage: git-publish
+# Arguments: None
+#
+# Examples:
+#   git-publish            # Push current branch to origin with same name
+#
+# Returns: Pushes current branch to origin and sets up tracking
+# Behavior: Refuses to publish master branch for safety
+#
+# Note: Originally designed to open PR page, but simplified to just push
+#
+# Source: https://github.com/christoomey/dotfiles/blob/77fb4084bd3f207aace80aa93a49769a6a298ddb/bin/git-publish
+
+def read_current_branch
+  `git rev-parse --abbrev-ref HEAD`.chomp
+end
+
+def main
+  current_branch = read_current_branch
+  if current_branch == "master"
+    warn "Currently on master, aborting."
+    exit 1
+  else
+    system("git push -u origin #{current_branch}:#{current_branch}")
+  end
+end
+
+main

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+GIT_HELPERS_HASH="%C(always,yellow)%h%C(always,reset)"
+GIT_HELPERS_RELATIVE_TIME="%C(always,green)%ar%C(always,reset)"
+GIT_HELPERS_AUTHOR="%C(always,bold blue)%an%C(always,reset)"
+GIT_HELPERS_REFS="%C(always,red)%d%C(always,reset)"
+GIT_HELPERS_SUBJECT="%s"
+GIT_HELPERS_SEPARATOR="{"
+GIT_HELPERS_FORMAT="${GIT_HELPERS_HASH} ${GIT_HELPERS_RELATIVE_TIME}${GIT_HELPERS_SEPARATOR}${GIT_HELPERS_AUTHOR}${GIT_HELPERS_SEPARATOR}${GIT_HELPERS_REFS} ${GIT_HELPERS_SUBJECT}"
+
+git_helpers_page() {
+  if [ -t 1 ]; then
+    less -FXRS
+  else
+    cat
+  fi
+}
+
+pretty_git_log() {
+  git log --graph --pretty="tformat:${GIT_HELPERS_FORMAT}" "$@" |
+    column -t -s "${GIT_HELPERS_SEPARATOR}" |
+    git_helpers_page
+}
+
+remove_untracked_files() {
+  git clean -fd "$@"
+}

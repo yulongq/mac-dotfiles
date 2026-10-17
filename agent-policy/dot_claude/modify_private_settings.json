@@ -1,0 +1,28 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* env is shared with host routes; manage only its declared keys.
+      Existing socket lists, including an empty list, belong to the host.
+      Other declared top-level subtrees replace live values so their nested
+      removals apply. docs/ownership.md owns the field-retirement contract. */ -}}
+{{- $managed := includeTemplate "claude/settings.json" . | fromJson -}}
+{{- $seeds := `{
+  "model": "opus"
+}` | fromJson -}}
+{{- $stdin := .chezmoi.stdin -}}
+{{- $current := dict -}}
+{{- if $stdin -}}{{- $current = fromJson $stdin -}}{{- end -}}
+{{- $out := deepCopy $current -}}
+{{- range $k, $v := $managed -}}{{- $out = set $out $k $v -}}{{- end -}}
+{{- $env := get $current "env" | default dict -}}
+{{- $out = set $out "env" (mergeOverwrite (deepCopy $env) (get $managed "env")) -}}
+{{- $network := dig "sandbox" "network" (dict) $current -}}
+{{- if hasKey $network "allowUnixSockets" -}}
+  {{- $out = setValueAtPath (list "sandbox" "network" "allowUnixSockets") (get $network "allowUnixSockets") $out -}}
+{{- end -}}
+{{- range $k, $v := $seeds -}}
+{{-   if not (hasKey $out $k) -}}{{- $out = set $out $k $v -}}{{- end -}}
+{{- end -}}
+{{- if deepEqual $current $out -}}
+  {{- $stdin -}}
+{{- else -}}
+  {{ toPrettyJson $out }}
+{{- end -}}
