@@ -8,7 +8,7 @@ Configure an Apple Silicon Mac using the installation owners in [ownership.md](o
 2. Review `packages/Brewfile`, then run `brew bundle --no-upgrade --file packages/Brewfile` from the checkout root. The declaration selects required packages; it is not a cleanup list for the whole machine.
 3. Install the asdf plugins and versions needed by the selected projects. Set up the JVM, Maven, and Go distributions at the paths selected by `home/dot_pathrc`, verifying vendor checksums. Retain rustup ownership of Rust toolchains.
 4. Install the CLI and editor dependencies declared in `packages/` with their owning runtimes. Keep Codex ACP in the selected asdf Node installation and regenerate its shims; do not create a competing global copy.
-5. Install vendor-managed desktop applications, IoskeleyMono Nerd Font for Ghostty, and Maple Mono Normal NF CN for kitty through their selected owners. Set up application sync or exports for VS Code, Zed, Karabiner, Raycast, input methods, and other application-owned preferences.
+5. Install vendor-managed desktop applications and Maple Mono Normal NF CN for kitty through their selected owners. Set up application sync or exports for VS Code, Zed, Karabiner, Raycast, input methods, and other application-owned preferences.
 
 ## Apply configuration
 
