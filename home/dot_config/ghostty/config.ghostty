@@ -10,7 +10,7 @@ theme = Snazzy Soft
 # Font settings
 # List available fonts: ghostty +list-fonts
 # font-family = Cascadia Code
-font-family = Maple Mono Normal NF CN
+font-family = IoskeleyMono Nerd Font
 font-size = 14
 font-thicken = true
 adjust-cell-height = 6
