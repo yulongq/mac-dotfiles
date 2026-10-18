@@ -7,8 +7,8 @@
 [sources.liby]
 url = "https://github.com/liby/dotfiles.git"
 ref = "refs/heads/main"
-observed_revision = "75ab9096a1568f00344fff8cc6617491e20f82f0"
-reviewed_through = "75ab9096a1568f00344fff8cc6617491e20f82f0"
+observed_revision = "1f5c663edd4bc729740c43d3f1619c7382742cc6"
+reviewed_through = "1f5c663edd4bc729740c43d3f1619c7382742cc6"
 
 [sources.joshukraine]
 url = "https://github.com/joshukraine/dotfiles.git"
