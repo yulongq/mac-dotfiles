@@ -1,20 +1,21 @@
 # observed_revision is the last discovered ref; reviewed_through records the
 # last revision whose relevant capabilities were accounted for.
-# Initial capability baseline (2026-10-17): the current tree at the revisions
-# below was reviewed for the surfaces in docs/ownership.md. History before
-# those revisions was not inspected. Rejected layers are recorded in
+# Initial capability coverage and rejected layers are recorded in
 # docs/ownership.md#upstream-baseline; unresolved candidates remain in pending.
 [sources.liby]
 url = "https://github.com/liby/dotfiles.git"
 ref = "refs/heads/main"
-observed_revision = "1f5c663edd4bc729740c43d3f1619c7382742cc6"
-reviewed_through = "1f5c663edd4bc729740c43d3f1619c7382742cc6"
+# Rewritten history: prior cursor 1f5c663edd4bc729740c43d3f1619c7382742cc6
+# and dbdd3aaf681af96c9aefa4df0f87aa6b20ed2be1 share tree
+# 8ad88ecbcffa945619d928137704e12dcfa89c9d; the review continues from that tree.
+observed_revision = "ee37dd036bf6ea5e93c2f08275a50d7240a4977f"
+reviewed_through = "ee37dd036bf6ea5e93c2f08275a50d7240a4977f"
 
 [sources.joshukraine]
 url = "https://github.com/joshukraine/dotfiles.git"
 ref = "refs/heads/master"
-observed_revision = "cf24722e28efbc294eee806fdbab76f255449e75"
-reviewed_through = "cf24722e28efbc294eee806fdbab76f255449e75"
+observed_revision = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
+reviewed_through = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
 
 [[pending]]
 source = "liby"
@@ -43,3 +44,52 @@ revision = "75ab9096a1568f00344fff8cc6617491e20f82f0"
 change = "Assess the remaining Pi extension package separately from the selected footer"
 reason = "The upstream installer selects the whole Pi Extensions package through its own runtime layout. This repository adopted only the session ID footer and retains npm installation and independently owned extensions."
 revisit_when = "When another extension is selected, inspect that pinned extension and verify its loading and interaction behavior without duplicating the managed footer or existing extensions."
+
+[[pending]]
+source = "liby"
+revision = "ee37dd036bf6ea5e93c2f08275a50d7240a4977f"
+change = "Activate the adopted shell initialization, output scanner, and skill updates"
+reason = "Source adoption does not deploy home or Agent targets. Gitleaks is declared but not installed; the selected shell files and scanner rules must be applied together, and the exact skill registry must be rebuilt before fresh sessions can load the changes."
+revisit_when = "On an authorized deployment, satisfy each target's recovery and host prerequisites, reconcile the selected targets, check fresh login and interactive shells, exercise the live hook, and verify skill loading in each affected Agent runtime."
+
+[[pending]]
+source = "liby"
+revision = "4cb851f4af209ba1e0029958950ea6aaebd95b57"
+change = "Evaluate the post-compaction state reminder"
+reason = "The reminder changes model behavior and overlaps existing global state-check instructions; structural hook acceptance does not establish that it improves continuation behavior."
+revisit_when = "When adopting the reminder, evaluate actual compact-and-continue sessions against the existing instructions and validate the affected runtime hook."
+
+[[pending]]
+source = "liby"
+revision = "c7da9774d97a780e9c3c502b6eb5e67a9f990db3"
+change = "Adopt Oracle's background-browser behavior after the supporting release"
+reason = "The noFocus behavior requires Oracle 0.22 or newer; this host has 0.21.5 and this adoption does not upgrade the CLI or replace its browser route."
+revisit_when = "After a separately selected Oracle upgrade, inspect the installed release and verify noFocus on the retained browser route before updating its settings and skill."
+
+[[pending]]
+source = "liby"
+revision = "e40337ea7e2e1ec5986c1879ab3e1c535f41ed41"
+change = "Evaluate the stacked pull request workflow"
+reason = "The gh skill's stack workflow adds publishing and merge behavior beyond the selected pinned-skill correction."
+revisit_when = "When stacked pull requests are needed, evaluate the workflow against the repository's branch model and current authorization and version-binding rules."
+
+[[pending]]
+source = "liby"
+revision = "e9e76905aeeffc430ea940d8f13b045ed378473a"
+change = "Evaluate broader Agent instruction and validation changes"
+reason = "These changes affect shared instruction semantics and evaluation requirements; they were not selected with the CLI-specific skill corrections."
+revisit_when = "When revising shared instructions, compare the current local behavior with the pinned upstream changes and complete the write-skill evaluation required for the selected semantics."
+
+[[pending]]
+source = "liby"
+revision = "661f53768336b5e19ab7ab46ea13bd5d97ebdf9d"
+change = "Reconcile glab and Herdr skill release compatibility"
+reason = "The version check reports glab 1.123.0 with skill metadata for 1.122.0, and Herdr 0.9.3 with skill metadata for 0.9.5. A mismatch alone does not authorize an upgrade or establish incompatibility."
+revisit_when = "Before changing either CLI or its release pin, compare the selected version's actual commands with the managed skill and validate the affected contracts."
+
+[[pending]]
+source = "joshukraine"
+revision = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
+change = "Assess the updated Neovim plugin pins"
+reason = "The eight lockfile updates require editor and plugin-build checks; configuration rendering does not establish their compatibility with this host's setup."
+revisit_when = "When updating editor plugins, review the pinned release deltas and verify startup, build steps, language servers, and the selected AI integrations."

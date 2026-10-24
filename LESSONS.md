@@ -20,6 +20,8 @@ During the split-source hook repair, mock checks passed while a real Git layout 
 
 The live home was missing `~/Brewfile` and the managed `new-branch` skill despite passing temporary-home tests. `bb` consequently failed, and the source did not preserve the intended Homebrew directory mode. These are deployment gaps that synthetic rendering alone cannot detect.
 
+**Exercise both login and interactive shell entry points.** A non-interactive login shell skips `.zshrc`, so initialization held only there does not select the managed toolchains. The isolated shell check resolved Homebrew Node and system Java before the shared login setup; it also exposed duplicate PATH entries because string assignment bypassed Zsh's unique array handling. The shell contract now covers both entry points and preservation of existing login-profile initialization.
+
 **Declare the implementation a helper needs and run that helper through the installed shell.** A command name's presence does not establish support for its flags. `ct` needed Universal Ctags while the shell found BSD ctags. Its repair required the package declaration, actual installation, fresh-shell resolution, and generation of project and Bundler dependency tags.
 
 ## Destructive target paths
@@ -33,6 +35,8 @@ The install helper accepted `$HOME/` and paths that resolved outside HOME, delet
 **Put regression checks in the command that maintainers actually run.** [scripts/validate](scripts/validate) is the shared entry point for configuration, hook, statusline, and skill checks. Adding a test file requires connecting it to that gate and accounting for its dependencies; running a subset does not establish that the gate passed.
 
 The Claude Code shell suites were outside the standard runner, and Codex tests depended on undeclared, unavailable Bun. The repair integrated the shell suites and Codex contracts into the existing Python runner and connected the complete command to the local pre-push hook. That gate still does not prove host activation.
+
+**Distinguish a clean scan from a scan that did not run.** The output scanner's previous missing-`jq` path exited successfully; its regular expressions also missed a standalone GitLab token and a URL password containing a colon. The hook now uses Gitleaks with local rules, and its tests exercise successful and failed tool output, retained generic formats, placeholders, and missing dependencies without printing synthetic credential values.
 
 ## Shared skill ownership
 

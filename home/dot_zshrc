@@ -1,6 +1,4 @@
-eval "$(env -u HOMEBREW_BREW_FILE -u HOMEBREW_PATH /opt/homebrew/bin/brew shellenv)"
-
-source "$HOME/.config/zsh/environment.zsh"
+[[ -o login ]] || source "$HOME/.config/zsh/environment.zsh"
 source "$HOME/.config/zsh/source.zsh"
 
 # Keep the existing private input local; it is never part of this repository.
@@ -11,16 +9,7 @@ if [[ -f "$HOME/.env" ]]; then
   }
 fi
 
-typeset -U path fpath
-path=("${ASDF_DATA_DIR:-$HOME/.asdf}/shims" "$HOME/.npm-global/bin" "$HOME/.local/bin" "$HOME/.bin" $path)
-path+=("$HOME/.lmstudio/bin")
-path=("$HOME/.kimi-code/bin" "$HOME/.grok/bin" "$HOME/.local/share/pnpm/bin" $path)
-export ASDF_NODEJS_LEGACY_FILE_DYNAMIC_STRATEGY=latest_installed
-export PNPM_HOME="$HOME/.local/share/pnpm"
-export NPM_CONFIG_PREFIX="$HOME/.npm-global"
-export npm_config_prefix="$NPM_CONFIG_PREFIX"
-
-fpath=("${ASDF_DATA_DIR:-$HOME/.asdf}/completions" "$HOME/.grok/completions/zsh" "$HOME/.docker/completions" $fpath)
+source "$HOME/.pathrc"
 autoload -Uz compinit
 () {
   setopt local_options extendedglob
@@ -69,7 +58,6 @@ bindkey -s '^x' '^usource ~/.zshrc\n'
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh)"
 [[ "$TERM_PROGRAM" == Apple_Terminal ]] || eval "$(starship init zsh)"
-[[ ! -r "$HOME/.orbstack/shell/init.zsh" ]] || source "$HOME/.orbstack/shell/init.zsh"
 if [[ -n "$OTTY_SHELL_INTEGRATION" && -r "$OTTY_SHELL_INTEGRATION/otty-integration.zsh" ]]; then
   source "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
 fi

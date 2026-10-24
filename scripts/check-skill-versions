@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+require "open3"
+require "pathname"
+require "yaml"
+
+root = Pathname.new(__dir__).parent.join("agent-policy/dot_agents/exact_skills")
+failed = false
+
+# These CLIs document --version as a local query. Other tagged skills, such as
+# Jev's service guidance, have no corresponding installed CLI release.
+%w[glab herdr oracle sessidx].each do |name|
+  source = root.join(name, "SKILL.md")
+  frontmatter = source.read.match(/\A---\n(.*?)\n---\n/m)
+  metadata = YAML.safe_load(frontmatter[1]).fetch("metadata")
+  ref = metadata["github-ref"] || metadata.fetch("gitlab-ref")
+  reviewed = ref.delete_prefix("refs/tags/").delete_prefix("v")
+  begin
+    output, status = Open3.capture2e(name, "--version")
+    version = output.match(/\A(?:#{Regexp.escape(name)}(?: version)?\s+)?v?(\d+\.\d+\.\d+(?:[-+][\w.-]+)?)(?:\s|$)/)
+    unless status.success? && version
+      warn "#{name}: could not determine the installed version"
+      failed = true
+      next
+    end
+    installed = version[1]
+    warn "#{name}: skill reviewed at #{reviewed}; installed CLI is #{installed}" unless reviewed == installed
+  rescue Errno::ENOENT
+    warn "#{name}: executable is unavailable on PATH"
+    failed = true
+  end
+end
+
+exit 1 if failed

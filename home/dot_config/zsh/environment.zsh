@@ -1,3 +1,6 @@
+eval "$(env -u HOMEBREW_BREW_FILE -u HOMEBREW_PATH /opt/homebrew/bin/brew shellenv)"
+typeset -U path fpath
+
 export EDITOR=nvim
 export GIT_EDITOR=nvim
 export BUNDLER_EDITOR=nvim
@@ -24,3 +27,6 @@ export FZF_ALT_C_COMMAND='fd --type d . --color=never'
 export https_proxy=http://127.0.0.1:6152
 export http_proxy=http://127.0.0.1:6152
 export all_proxy=socks5://127.0.0.1:6153
+
+# OrbStack contributes completion paths before the interactive shell runs compinit.
+[[ ! -r "$HOME/.orbstack/shell/init.zsh" ]] || source "$HOME/.orbstack/shell/init.zsh"

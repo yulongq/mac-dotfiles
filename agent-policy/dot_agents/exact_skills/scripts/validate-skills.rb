@@ -90,7 +90,7 @@ CLI_SMOKE_COMMANDS = [
   ["context7 library resolve contract", %w[ctx7 library --help], /(?=.*<name>)(?=.*\[query\])/m],
   ["context7 docs query contract", %w[ctx7 docs --help], /(?=.*<libraryId>)(?=.*<query>)/m],
   ["gh skill install help", %w[gh skill install --help], /(?=.*--agent)(?=.*--allow-hidden-dirs)(?=.*--dir)(?=.*--from-local)(?=.*--scope)/m],
-  ["gh skill update help", %w[gh skill update --help], /(?=.*gh skill update \[<skill>\.\.\.\])(?=.*--all)(?=.*--dir)(?=.*--dry-run)/m],
+  ["gh skill update help", %w[gh skill update --help], /(?=.*gh skill update \[<skill>\.\.\.\])(?=.*--all)(?=.*--dir)(?=.*--dry-run)(?=.*--unpin)/m],
   ["gh pr merge head guard help", %w[gh pr merge --help], /--match-head-commit/],
   ["gh repo read-file help", %w[gh repo read-file --help], /(?=.*gh repo read-file <path>)(?=.*^\s+--ref string)/m],
   ["gh discussion view paging help", %w[gh discussion view --help], /(?=.*latest replies)(?=.*--after)(?=.*-L, --limit)(?=.*--order)/m],
@@ -129,7 +129,7 @@ CLI_SMOKE_COMMANDS = [
   ["sessidx verbs", %w[sessidx --help], /(?=.*^\s+search\s)(?=.*^\s+grep\s)(?=.*^\s+show\s)(?=.*^\s+count\s)(?=.*^\s+sql\s)(?=.*^\s+doctor\s)/m],
   ["sessidx search filters", %w[sessidx search --help], /(?=.*--agent <AGENT>[^\n]*\[possible values: claude, codex, pi\])(?=.*--role)(?=.*--since)(?=.*--until)(?=.*--cwd)(?=.*--session)(?=.*--cursor)/m],
   ["sessidx show context", %w[sessidx show --help], /--around/],
-  ["sessidx count options", %w[sessidx count --help], /(?=.*commands, failures, denials)(?=.*--by)(?=.*--program)/m],
+  ["sessidx count options", %w[sessidx count --help], /(?=.*commands, failures, denials, usage, compactions)(?=.*--by)(?=.*--program)/m],
 ].concat(options[:root] ? [
   ["apply-config scoped apply", %w[chezmoi help apply], /(?=.*--source)(?=.*--exclude)(?=.*--refresh-externals)/m],
   ["apply-config recursive preview", %w[chezmoi help diff], /(?=.*--recursive)(?=.*--exclude)/m],

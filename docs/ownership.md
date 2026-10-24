@@ -4,10 +4,10 @@ The repository owns durable configuration and the instructions needed to reconst
 
 | Surface | Owner and source | Installation and configuration contract |
 | --- | --- | --- |
-| Zsh | `home/dot_zshrc`, `home/dot_config/zsh`, and pinned archives in `home/.chezmoiexternal.toml` | Homebrew supplies fzf, zoxide, Starship, eza, zsh-abbr, and Universal Ctags for `ct`. `.zshrc.local` remains an optional local override. |
+| Zsh | `home/modify_dot_zprofile`, `home/dot_zshrc`, `home/dot_config/zsh`, and pinned archives in `home/.chezmoiexternal.toml` | The login profile modifier owns only the source lines for `environment.zsh` and `.pathrc`, preserving other host initialization. Shared environment setup runs before interactive completion; non-login interactive shells load it themselves. Homebrew supplies fzf, zoxide, Starship, eza, zsh-abbr, and Universal Ctags for `ct`. `.zshrc.local` remains an optional local override. |
 | Abbreviations | `home/.chezmoidata/abbreviations.yaml` and `home/dot_config/zsh-abbr/abbreviations.zsh.tmpl` | chezmoi generates the installed Zsh file during apply; edit the YAML instead of the generated target. |
 | Private shell input | Existing local environment file | Consumed through the existing shell entrypoint; never imported, inspected, generated, or backed up by repository scripts. |
-| PATH additions | `home/dot_pathrc` | Preserve the chosen `~/dep` layout; Java, Maven, and Go must exist before their commands can run. |
+| PATH additions | `home/dot_pathrc` | Login and interactive shells use the same ordered paths and runtime exports. Interactive shells reapply them after private input and local overrides. Array assignment removes duplicates while retaining the selected asdf, npm-global, and `~/dep` owners; Java, Maven, and Go must exist before their commands can run. |
 | Node, Python, Ruby, Lua, Neovim | asdf, with `home/dot_tool-versions` and `home/dot_asdfrc` | Install the corresponding asdf plugins and the versions required by actual projects. Python 2.7.18 remains declared; verify its project consumers before installing or retiring it. |
 | Java/GraalVM | Vendor archive under `~/dep/graalvm-jdk-25.0.4.1+1.1/Contents/Home` | Restore the same selected distribution and verify the vendor checksum before extraction; `JAVA_HOME` selects it. |
 | Maven | Apache archive under `~/dep/apache-maven-3.9.16` | Restore the vendor archive and checksum; `MAVEN_HOME` selects it. Prefer project wrappers where the project owns Maven's version. |
@@ -26,6 +26,7 @@ The repository owns durable configuration and the instructions needed to reconst
 | tmux | `home/dot_config/tmux` and pinned TPM archive | After restoring TPM, use its install action for the plugins already declared by `tmux.conf`; verify navigation and clipboard behavior. |
 | Git | `home/dot_gitconfig`, helpers, ignore, and message template | `~/.gitconfig.local` owns local identity and overrides. Authentication transport and signing identity require explicit host configuration. |
 | Agent instructions, settings, and hooks | Independently configured sources under `agent-policy/` | Configure host settings before activation. Preserve selected API routes, authentication stores, models, and 1Password socket allowances. |
+| Claude Code output scanning | `agent-policy/dot_claude/hooks/executable_post-bash-scan-secrets.sh` and its adjacent TOML rules | Homebrew supplies Gitleaks through `packages/Brewfile`. The post-tool hook scans successful and failed Bash output locally, reports only rule identifiers, and fails when scanning is unavailable. It warns after output exists; it does not prevent the original exposure. |
 | Shared skill registry | `agent-policy/dot_agents/exact_skills` and `scripts/install-skills` | `scripts/install-skills` rebuilds `~/.agents/skills` recursively with `rsync -a --delete`; it resolves `HOME` and the target through symlinks and `..`, and refuses anything that does not resolve exactly to `$HOME/.agents/skills`. A selected-target chezmoi apply can leave nested extras. Back up the target before the first rebuild; add a skill to source to retain it; do not edit or commit in the live registry. |
 | Raycast | Deployed script in `home/dot_config/raycast/scripts` | Preserve the existing Script Commands directory registration. Account state and extension settings stay with Raycast. |
 | VS Code, Zed, Karabiner | Application sync, export, or local settings | Record the chosen sync/export owner for machine setup; do not copy mixed app databases or account state. |
@@ -37,6 +38,8 @@ Machine setup combines managed configuration with runtime archives, application 
 ## Upstream baseline
 
 The initial capability baseline reviewed `liby/dotfiles` at `75ab909` and `joshukraine/dotfiles` at `cf24722` for the surfaces in this table; history before those revisions was not inspected. `liby` supplies the current shell, Agent, and selected app structure; its `.chezmoiscripts` installers, macOS defaults, package declarations, and remaining Pi extension package are not adopted wholesale. `joshukraine` supplies the older editor, terminal, and Git-helper assets; its Stow/Laptop setup, Zsh/Fish history, Claude skill and preset layer, and package declarations are superseded or application-owned. Open candidates are tracked in `maintenance/upstreams.toml`; accepted behavior belongs in this checkout.
+
+Retain Herdr, Ghostty, and the Raycast script independently of upstream retirements. Git transport, credential storage, Agent permission rules, model inventories, and macOS notification preferences remain host choices; an upstream change to them is not an environment migration. The local Python/Ruby validation entry point remains authoritative rather than adopting upstream's Bun and GitHub Actions layout.
 
 ## Agent settings
 

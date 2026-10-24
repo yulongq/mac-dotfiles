@@ -1,103 +1,96 @@
 #!/usr/bin/env bash
-# Test harness for post-bash-scan-secrets.sh.
-# Pipes fake successful and failed Bash payloads into the hook and checks whether it
-# emits a leak warning. Each case states the categories it expects to fire
-# (comma-joined, in scanner order) or "none" for a clean output.
-# Run: bash post-bash-scan-secrets.test.sh
-
+# Exercise the hook with synthetic output; never print the generated values.
 set -u
 HOOK="$(cd "$(dirname "$0")" && pwd)/executable_post-bash-scan-secrets.sh"
-
-if [ ! -r "$HOOK" ]; then
-  echo "cannot find hook script at $HOOK" >&2
-  exit 1
-fi
-
+fixture=$(mktemp -d)
+trap 'rm -rf "$fixture"' EXIT
 PASS=0
 FAIL=0
 
-section() {
-  printf '\n== %s ==\n' "$1"
+random() {
+  head -c 1024 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c "$1"
 }
 
-run_case() {
-  local expected="$1" payload="$2" event="${3:-PostToolUse}" result warn actual
-  result=$(jq -nc --arg text "$payload" --arg event "$event" '
-    {hook_event_name: $event, tool_name: "Bash"} +
-    if $event == "PostToolUseFailure" then {error: $text, is_interrupt: false}
-    else {tool_response: {stdout: $text, stderr: ""}} end' | bash "$HOOK")
-  warn=$(printf '%s' "$result" | jq -r '.hookSpecificOutput.additionalContext // ""')
-  if [ -z "$warn" ]; then
-    actual="none"
-  else
-    actual=$(echo "$warn" | sed -nE 's/.*potential secrets \(([^)]*)\).*/\1/p')
-  fi
-  if [ "$actual" = "$expected" ] && { [ -z "$warn" ] ||
-    [ "$(printf '%s' "$result" | jq -r '.hookSpecificOutput.hookEventName')" = "$event" ]; }; then
-    printf '  ok   %-40s  %s\n' "$actual" "$payload"
+report() {
+  if "$2"; then
+    printf 'ok: %s\n' "$1"
     PASS=$((PASS + 1))
   else
-    printf '  FAIL want=%-30s got=%-30s  %s\n' "$expected" "$actual" "$payload"
+    printf 'FAIL: %s\n' "$1"
     FAIL=$((FAIL + 1))
   fi
 }
 
-section "Template/placeholder source code (must NOT warn)"
-# Source code containing $-interpolation, template literals, or angle-bracket
-# placeholders must not look like a leaked secret.
-run_case none 'Authorization: `Bearer ${apiToken}`'
-run_case none "'Authorization': \`Bearer \${apiToken}\`,"
-run_case none 'TOKEN=${REAL_TOKEN}'
-run_case none 'API_KEY={{ env.API_KEY }}'
-run_case none 'mysql://user:${PASSWORD}@host'
-run_case none 'Authorization: <YOUR_TOKEN_HERE>'
-run_case none 'export TOKEN="$MY_TOKEN"'
+payload() {
+  jq -nc --arg event "$1" --arg text "$2" --arg stderr "${3:-}" '
+    {hook_event_name: $event, tool_name: "Bash"} +
+    if $event == "PostToolUseFailure" then {error: $text}
+    else {tool_response: {stdout: $text, stderr: $stderr}} end'
+}
 
-section "Bearer tokens"
-run_case 'Bearer token, auth header' 'Authorization: Bearer abcdef1234567890XYZQRS'
-run_case 'Bearer token, auth header' 'Authorization: "Bearer abcdef1234567890XYZQRS"'
-run_case 'Bearer token'              'curl -H "Bearer abcdef1234567890XYZQRS" https://x'
+run_case() {
+  local label="$1" expected="$2" event="$3" result status warn ok=false
+  result=$(payload "$event" "$4" "${5:-}" | bash "$HOOK" 2>"$fixture/stderr")
+  status=$?
+  warn=$(printf '%s' "$result" | jq -r '.hookSpecificOutput.additionalContext // ""')
+  if [[ $status == 0 ]]; then
+    if [[ $expected == none && $result == '{}' ]]; then
+      ok=true
+    elif [[ $expected == warn && -n $warn && $warn != *"$SECRET"* ]] &&
+      [[ $(printf '%s' "$result" | jq -r '.hookSpecificOutput.hookEventName') == "$event" ]] &&
+      ! grep -Fq "$SECRET" "$fixture/stderr"; then
+      ok=true
+    fi
+  fi
+  report "$label" "$ok"
+}
 
-section "Vendor API key prefixes"
-run_case 'API key' 'key=sk-aaaaaaaaaaaaaaaaaaaa'
-run_case 'API key, env secret' 'token=ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-run_case 'API key' 'slack=xoxb-aaaaaaaaaaaaaaaaaaaaaaaa'
-run_case 'API key' 'anthropic=sk-ant-aaaaaaaaaaaaaaaaaaaa'
-run_case 'API key' 'stripe=sk_live_aaaaaaaaaaaaaaaaaaaa'
-run_case 'API key' 'aws=AKIAIOSFODNN7EXAMPLE'
+SECRET="ghp_$(random 36)"
+run_case 'stdout vendor token' warn PostToolUse "token: $SECRET"
+run_case 'stderr vendor token' warn PostToolUse done "token: $SECRET"
+run_case 'failed command output' warn PostToolUseFailure "failure: $SECRET"
+SECRET="glpat-$(random 20)"
+run_case 'GitLab token without an assignment' warn PostToolUse "$SECRET"
+SECRET=$(random 40)
+run_case 'Authorization header' warn PostToolUse "> Authorization: Bearer $SECRET"
+run_case 'Authorization without a scheme' warn PostToolUse "Authorization: $SECRET"
+run_case 'escaped JSON header' warn PostToolUse "{\"request\": \"{\\\"Authorization\\\": \\\"Bearer $SECRET\\\"}\"}"
+run_case 'standalone Bearer value' warn PostToolUse "Bearer $SECRET"
+run_case 'X-Api-Key header' warn PostToolUse "X-Api-Key: $SECRET"
+run_case 'X-Auth-Token header' warn PostToolUse "X-Auth-Token: $SECRET"
+run_case 'named credential assignment' warn PostToolUse "SERVICE_TOKEN=$SECRET"
+run_case 'quoted password assignment' warn PostToolUse "PASSWORD=\"$SECRET\""
+SECRET=$(printf 'app:%s' "$(random 8)" | base64)
+run_case 'short Basic credential' warn PostToolUse "> Authorization: Basic $SECRET"
+SECRET=$(random 16)
+run_case 'short Token credential' warn PostToolUse "Authorization: Token $SECRET"
+SECRET=passpass
+run_case 'low-complexity URL password' warn PostToolUse "postgres://app:$SECRET@db.internal/app"
+SECRET="$(random 10):$(random 10)"
+run_case 'URL password with a colon' warn PostToolUse "postgres://app:$SECRET@db.internal/app"
+run_case 'header placeholders' none PostToolUse $'Authorization: Bearer undefined\nAuthorization: <YOUR_TOKEN_HERE>\nAuthorization: `Bearer ${apiToken}`'
+run_case 'assignment placeholders' none PostToolUse $'SERVICE_TOKEN=${REAL_TOKEN}\nAPI_KEY={{ env.API_KEY }}\nexport TOKEN="$MY_TOKEN"'
+run_case 'URL placeholders' none PostToolUse $'postgres://app:<password>@db.internal/app\npostgres://app:${DB_PASSWORD_1}@db.internal/app'
+run_case 'clean command output' none PostToolUse 'GET /api/users 200 OK'
+run_case 'clean command failure' none PostToolUseFailure 'Exit code 1: file not found'
+run_case 'unrelated assignment' none PostToolUse "CHECKSUM=$(random 40)"
 
-section "Env secret assignments"
-run_case 'API key, env secret' 'TOKEN=ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-run_case 'env secret'          'PASSWORD=correcthorsebatterystaple'
-run_case 'env secret'          'PRIVATE_KEY="aaaaaaaaaaaaaaaaaaaaaaaa"'
-run_case 'env secret'          'ANTHROPIC_AUTH_TOKEN=synthetic_fixture_123456789'
-run_case 'env secret'          'CONTEXT7_API_KEY=synthetic_fixture_123456789'
-run_case 'env secret'          'RC_GATEWAY_API_KEY=synthetic_fixture_123456789'
-run_case none                  'SERVICE_TOKEN=${REAL_TOKEN}'
-run_case none                  'SERVICE_TOKEN={{ env.TOKEN }}'
-run_case none                  'CHECKSUM=synthetic_fixture_123456789'
+unscanned() {
+  local label="$1" hook="$2" result status ok=false
+  shift 2
+  result=$(payload PostToolUse done | env "$@" /bin/bash "$hook" 2>/dev/null)
+  status=$?
+  [[ $status != 0 && -z $result ]] && ok=true
+  report "$label" "$ok"
+}
 
-section "Failed command output"
-run_case 'Bearer token, auth header' $'Exit code 1\nAuthorization: Bearer synthetic_fixture_123456789' PostToolUseFailure
-run_case 'env secret' 'SERVICE_TOKEN=synthetic_fixture_123456789' PostToolUseFailure
-run_case none 'Exit code 1: file not found' PostToolUseFailure
+cp "$HOOK" "$fixture/scan.sh"
+unscanned 'missing scanner configuration fails' "$fixture/scan.sh"
+unscanned 'missing jq fails' "$HOOK" PATH=/bin
+mkdir "$fixture/bin"
+ln -s "$(command -v jq)" "$fixture/bin/jq"
+ln -s /bin/cat "$fixture/bin/cat"
+unscanned 'missing gitleaks fails' "$HOOK" "PATH=$fixture/bin"
 
-section "URL credentials"
-run_case 'URL credential' 'mysql://user:correcthorsebatterystaple@host'
-run_case 'URL credential' 'postgres://admin:supersecretpwd123@db.example.com'
-
-section "Auth headers (non-Bearer)"
-run_case 'auth header' 'X-Api-Key: aaaaaaaaaaaaaaaaaaaa'
-run_case 'auth header' 'X-Auth-Token: aaaaaaaaaaaaaaaaaaaa'
-run_case 'auth header' 'Authorization: Basic dXNlcjpwYXNzd29yZA=='
-run_case 'auth header' 'Authorization: Token aaaaaaaaaaaaaaaaaaaa'
-
-section "Clean output (must NOT warn)"
-run_case none 'Hello, world!'
-run_case none 'commit abc123 by alice'
-run_case none 'GET /api/users 200 OK'
-run_case none 'Authorization required'
-run_case none 'TOKEN= # unset for now'
-
-printf '\n=== %d passed, %d failed ===\n' "$PASS" "$FAIL"
-[ "$FAIL" -eq 0 ]
+printf '%d passed, %d failed\n' "$PASS" "$FAIL"
+[[ $FAIL == 0 ]]

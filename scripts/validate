@@ -4,3 +4,4 @@ cd "$(dirname "$0")/.."
 python3 -m unittest discover -s tests -v
 ruby agent-policy/dot_agents/exact_skills/scripts/validate-skills.rb --smoke
 ruby agent-policy/dot_agents/exact_skills/scripts/validate-skills.rb --root .agents/skills --smoke
+scripts/check-skill-versions

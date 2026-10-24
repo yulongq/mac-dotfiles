@@ -1,0 +1,8 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Own only the two source lines; existing host initialization stays in place. */ -}}
+{{- $out := .chezmoi.stdin -}}
+{{- $out = replaceAllRegex `(?m)^source "\$HOME/\.config/zsh/environment\.zsh"\r?(?:\n|$)` "" $out -}}
+{{- $out = replaceAllRegex `(?m)^source "\$HOME/\.pathrc"\r?(?:\n|$)` "" $out -}}
+{{- $out -}}
+{{- if and $out (not (hasSuffix "\n" $out)) }}{{ "\n" }}{{ end -}}
+{{ "source \"$HOME/.config/zsh/environment.zsh\"\nsource \"$HOME/.pathrc\"\n" -}}

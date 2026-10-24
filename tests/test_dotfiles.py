@@ -29,6 +29,10 @@ class DotfilesTests(unittest.TestCase):
         cls.base = Path(cls.workspace.name)
         cls.destination = cls.base / "home"
         cls.destination.mkdir()
+        (cls.destination / ".zprofile").write_text(
+            "export DOTFILES_PROFILE_FIXTURE=retained\n"
+            'source "$HOME/.pathrc" && export DOTFILES_PROFILE_SUFFIX=preserved\n'
+        )
         cls.chezmoi = [
             "chezmoi", "--config", "/dev/null", "--config-format", "toml",
             "--source", str(ROOT), "--destination", str(cls.destination),
@@ -163,7 +167,7 @@ class DotfilesTests(unittest.TestCase):
 
     def test_render_and_reapply(self):
         expected = [
-            ".zshrc", ".pathrc", ".gitconfig", ".tool-versions",
+            ".zshrc", ".zprofile", ".pathrc", ".gitconfig", ".tool-versions",
             ".config/ghostty/config.ghostty", ".config/kitty/kitty.conf",
             ".config/nvim/init.lua", ".config/nvim/lazy-lock.json",
             ".config/tmux/tmux.conf", ".config/starship.toml",
@@ -186,6 +190,7 @@ class DotfilesTests(unittest.TestCase):
         for source in (self.destination / ".config/zsh").glob("*.zsh"):
             run("zsh", "-n", str(source))
         run("zsh", "-n", str(self.destination / ".zshrc"))
+        run("zsh", "-n", str(self.destination / ".zprofile"))
         run("zsh", "-n", str(self.destination / ".pathrc"))
         for source in (self.destination / ".config/nvim").glob("*.json"):
             json.loads(source.read_text())
@@ -221,6 +226,22 @@ class DotfilesTests(unittest.TestCase):
         self.assertIn("gcom: function", result.stdout)
         self.assertIn("history-substring-search-up", result.stdout)
         self.assertIn("ll --tree --level=2", result.stdout)
+
+        for flags in ("-lc", "-ic"):
+            with self.subTest(shell=flags):
+                result = run("/bin/zsh", flags,
+                             "command -v node java mvn go; print -rl -- $path; print -r -- $DOTFILES_PROFILE_FIXTURE $DOTFILES_PROFILE_SUFFIX",
+                             env=environment, cwd=self.destination)
+                self.assertIn(str(self.destination / ".asdf/shims/node"), result.stdout)
+                self.assertIn(str(self.destination / "dep/graalvm-jdk-25.0.4.1+1.1/Contents/Home/bin/java"), result.stdout)
+                self.assertIn(str(self.destination / "dep/apache-maven-3.9.16/bin/mvn"), result.stdout)
+                self.assertIn(str(self.destination / "dep/golang/bin/go"), result.stdout)
+                paths = [line for line in result.stdout.splitlines() if line in (
+                    str(self.destination / ".asdf/shims"), str(self.destination / ".local/bin"),
+                )]
+                self.assertEqual(len(paths), 2, result.stdout)
+                if flags == "-lc":
+                    self.assertIn("retained preserved", result.stdout)
 
     def test_herdr_sidebar_preserves_host_settings(self):
         target = self.destination / ".config/herdr/config.toml"

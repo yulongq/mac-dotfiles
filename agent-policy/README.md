@@ -10,6 +10,8 @@ Pi's `extensions/session-id-footer.ts` adds the session ID below the working dir
 
 Run `scripts/validate` from the checkout root for configuration, hook, statusline, and skill checks. `python3 -m unittest discover -s tests -v` runs the configuration, hook, and statusline tests alone. These checks apply the actual modifiers to synthetic temporary destinations, without reading live Agent settings or invoking agents. They do not establish host activation or feature availability.
 
+The Bash output scanner requires `jq` and Gitleaks on the hook's PATH and `post-bash-scan-secrets.toml` beside the executable. Deploy the script and rules together after installing the declared dependencies. Custom rules retain warnings for generic credential assignments, authentication headers, standalone Bearer values, and URL passwords alongside Gitleaks' vendor rules; only rule identifiers enter the reminder. Gitleaks' default allowlists still apply, including its exclusion of single-character repeated values.
+
 From the checkout root, run `ruby agent-policy/dot_agents/exact_skills/scripts/validate-skills.rb --smoke` to validate the managed registry and its CLI contracts. Verify instruction and skill loading in fresh sessions of each affected runtime; structural and CLI checks alone do not prove loading. Default home application does not run an Agent policy installer.
 
 ## Shared skill ownership
@@ -17,3 +19,5 @@ From the checkout root, run `ruby agent-policy/dot_agents/exact_skills/scripts/v
 The directories containing `dot_agents/exact_skills/*/SKILL.md` are the complete managed skill registry; `dot_agents/exact_skills/scripts/` contains their shared validator. `~/.agents/skills` is an exact chezmoi target at the top level, and `scripts/install-skills` performs the complete recursive rebuild with `rsync -a --delete`. The script resolves `HOME` and the target through symlinks and `..`, and refuses anything that does not resolve exactly to `$HOME/.agents/skills`. A selected-target `chezmoi apply` can leave nested files that are not in source; use the script for the registry. Back up the target before the first rebuild; add a skill to source to retain it. Do not edit or commit in the live registry.
 
 Removing a managed skill requires source deletion and a rebuild with `scripts/install-skills`; verify both the source and target are absent and that this is the intended registry. A vendor or local skill that should survive must be added to the source or installed outside `~/.agents/skills`, because the rebuild does not preserve unmanaged siblings.
+
+Release metadata records the upstream version compared, not byte identity with an unmodified vendor skill. Local routing and authorization remain part of the managed source. Run `scripts/check-skill-versions` after upgrading a covered CLI; a mismatch is evidence that its recorded release needs review, not that every skill instruction is obsolete.
