@@ -42,7 +42,6 @@ brew "zoxide"
 
 cask "1password-cli"
 cask "cmux"
-cask "font-ioskeley-mono-term-nerd-font"
 cask "laishulu/homebrew/font-sarasa-nerd"
 cask "longbridge/tap/longbridge-terminal"
 cask "openinterminal"

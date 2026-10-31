@@ -173,6 +173,8 @@ class DotfilesTests(unittest.TestCase):
             ".config/tmux/tmux.conf", ".config/starship.toml",
             ".config/raycast/scripts/copy-markdown-url-and-title.js",
             ".local/bin/git-check-uncommitted", ".local/bin/markdown-validate",
+            ".local/bin/setup-rex", ".config/rex/init.lua",
+            ".config/rex/actions/confirm_close.lua",
         ]
         for name in expected:
             self.assertTrue((self.destination / name).is_file(), name)
@@ -192,10 +194,71 @@ class DotfilesTests(unittest.TestCase):
         run("zsh", "-n", str(self.destination / ".zshrc"))
         run("zsh", "-n", str(self.destination / ".zprofile"))
         run("zsh", "-n", str(self.destination / ".pathrc"))
+        run("zsh", "-n", str(self.destination / ".local/bin/setup-rex"))
         for source in (self.destination / ".config/nvim").glob("*.json"):
             json.loads(source.read_text())
         run("zsh", "-n", str(self.destination / ".config/zsh-abbr/abbreviations.zsh"))
         run("git", "config", "--file", str(self.destination / ".gitconfig"), "--get", "core.editor")
+
+    def test_setup_rex_selects_connected_app_and_stops_before_preference_writes(self):
+        with tempfile.TemporaryDirectory(dir=self.base, prefix="rex-setup-") as directory:
+            base = Path(directory)
+            binary = base / "bin"
+            binary.mkdir()
+            temporary = base / "tmp"
+            temporary.mkdir()
+            calls = base / "calls.jsonl"
+            stub = '''#!/usr/bin/env python3
+import json, os, pathlib, sys
+tool, args = pathlib.Path(sys.argv[0]).name, sys.argv[1:]
+with open(os.environ["REX_SETUP_TEST_CALLS"], "a") as log:
+    log.write(json.dumps([tool, *args]) + "\\n")
+failure = os.environ["REX_SETUP_TEST_FAILURE"]
+if tool == "rex" and "ls" in args:
+    print(os.environ["REX_SETUP_TEST_CLIENTS"])
+elif tool == "curl":
+    pathlib.Path(args[args.index("--output") + 1]).write_text("test theme")
+elif tool == "shasum":
+    sys.stdin.read()
+    sys.exit(1 if failure == "checksum" else 0)
+elif tool == "rex" and "client.theme.import" in args and failure == "import":
+    sys.exit(1)
+'''
+            for name in ("rex", "defaults", "curl", "shasum"):
+                executable = binary / name
+                executable.write_text(stub)
+                executable.chmod(0o755)
+            active = {"client_id": "active", "info": {"kind": "app"},
+                      "principal": {"transport": "unix"}, "connection_state": "connected"}
+            clients = [active, {**active, "client_id": "stale", "connection_state": "lost"},
+                       {**active, "client_id": "remote", "principal": {"transport": "tcp"}}]
+            for failure in ("", "ambiguous", "checksum", "import"):
+                with self.subTest(failure=failure):
+                    calls.write_text("")
+                    environment = {
+                        "HOME": str(self.destination), "TMPDIR": str(temporary),
+                        "PATH": f"{binary}:/opt/homebrew/bin:/usr/bin:/bin",
+                        "REX_SETUP_TEST_CALLS": str(calls), "REX_SETUP_TEST_FAILURE": failure,
+                        "REX_SETUP_TEST_CLIENTS": json.dumps({
+                            "clients": clients + ([active] if failure == "ambiguous" else []),
+                        }),
+                    }
+                    result = subprocess.run(
+                        ["zsh", "-f", str(self.destination / ".local/bin/setup-rex")],
+                        env=environment, text=True, capture_output=True, timeout=30,
+                    )
+                    invoked = [json.loads(line) for line in calls.read_text().splitlines()]
+                    writes = [call for call in invoked if call[0] == "defaults"]
+                    if failure:
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertEqual(writes, [])
+                    else:
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertTrue(writes)
+                        imported = next(call for call in invoked if "client.theme.import" in call)
+                        self.assertEqual(imported[imported.index("-C") + 1], "active")
+                        self.assertEqual(invoked[-1], ["rex", "--autostart=false", "config", "reload"])
+                    self.assertEqual(list(temporary.iterdir()), [])
 
     def test_shell_contract_with_pinned_plugins(self):
         for name in ("node", "npm", "nvim"):

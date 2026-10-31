@@ -8,7 +8,7 @@ Configure an Apple Silicon Mac using the installation owners in [ownership.md](o
 2. Review `packages/Brewfile`, then run `brew bundle --no-upgrade --file packages/Brewfile` from the checkout root. The declaration selects required packages; it is not a cleanup list for the whole machine.
 3. Install the asdf plugins and versions needed by the selected projects. Set up the JVM, Maven, and Go distributions at the paths selected by `home/dot_pathrc`, verifying vendor checksums. Retain rustup ownership of Rust toolchains.
 4. Install the CLI and editor dependencies declared in `packages/` with their owning runtimes. Keep Codex ACP in the selected asdf Node installation and regenerate its shims; do not create a competing global copy.
-5. Install vendor-managed desktop applications and Maple Mono Normal NF CN for kitty through their selected owners. Set up application sync or exports for VS Code, Zed, Karabiner, Raycast, input methods, and other application-owned preferences.
+5. Install vendor-managed desktop applications and Maple Mono Normal NF CN for Ghostty and kitty through their selected owners. Set up application sync or exports for VS Code, Zed, Karabiner, Raycast, input methods, and other application-owned preferences.
 
 ## Apply configuration
 
@@ -18,6 +18,14 @@ Configure an Apple Silicon Mac using the installation owners in [ownership.md](o
 4. Apply Neovim, Ghostty, kitty, tmux, and LazyGit configuration. Review Neovim plugin build steps; use TPM's install action for the plugins declared by `tmux.conf`. Register the managed script directory in Raycast.
 5. Configure Agent sources for the host using [their runtime requirements](../agent-policy/README.md). Check provider routes, model selections, socket access, the exact skill registry, and runtime-owned state. Back up `~/.agents/skills` before the first rebuild, then run `scripts/install-skills`; it reconstructs the registry recursively from `agent-policy/dot_agents/exact_skills`. Permission changes require explicit approval, and the default home apply does not activate Agent policy.
 6. Repeat application and inspect scoped status/diff output. Distinguish application write-backs from unexplained source drift.
+
+## Set up Rex
+
+Install and open Rex through its vendor installer, then install Maple Mono Normal NF CN through Font Book. Apply `~/.config/rex` and `~/.local/bin/setup-rex` from this checkout using the scoped lifecycle procedure. The Lua configuration binds Command-N to a session, Command-Shift-N to an app window, Command-Z to terminal undo, and Command-W to confirmation when a program is still running.
+
+Enable Remote Control in Rex Settings under Rex Server, keep exactly one local Rex app connected, and run `setup-rex` in a fresh shell. It downloads and verifies the pinned Snazzy Soft theme, checks Lua configuration, imports the theme, writes the selected appearance and terminal preferences, and reloads Lua. It selects Maple Mono Normal NF CN at 14 pt. Reopen the Rex app when convenient to load launch-time preferences, leaving Rex Server running so its sessions survive. The command does not install Rex, rexume, or Agent integrations; shared skills remain under this repository's Agent configuration workflow.
+
+Run `rex config check` and `rex keymap` to check Lua loading and the running server's bindings. Verify font rendering, theme colors, and the close confirmation in Rex after reopening the app.
 
 ## Verify the environment
 

@@ -8,7 +8,7 @@ ref = "refs/heads/main"
 # Rewritten history: prior cursor 1f5c663edd4bc729740c43d3f1619c7382742cc6
 # and dbdd3aaf681af96c9aefa4df0f87aa6b20ed2be1 share tree
 # 8ad88ecbcffa945619d928137704e12dcfa89c9d; the review continues from that tree.
-observed_revision = "ee37dd036bf6ea5e93c2f08275a50d7240a4977f"
+observed_revision = "4330f46943a0011d4f8cdc00ab21f2d690a58a5f"
 reviewed_through = "ee37dd036bf6ea5e93c2f08275a50d7240a4977f"
 
 [sources.joshukraine]
@@ -16,6 +16,13 @@ url = "https://github.com/joshukraine/dotfiles.git"
 ref = "refs/heads/master"
 observed_revision = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
 reviewed_through = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
+
+[[pending]]
+source = "liby"
+revision = "4330f46943a0011d4f8cdc00ab21f2d690a58a5f"
+change = "Reconcile the unavailable liby review cursor"
+reason = "The recorded reviewed_through commit is absent from the fetched main history. Only the current Rex setup files were inspected for this adoption."
+revisit_when = "Before the next general upstream review, recover the prior cursor or establish an equivalent tree and account for the remaining changes before advancing reviewed_through."
 
 [[pending]]
 source = "liby"

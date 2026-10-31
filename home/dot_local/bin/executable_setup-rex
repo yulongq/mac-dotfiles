@@ -1,0 +1,58 @@
+#!/bin/zsh -f
+set -euo pipefail
+
+if (( ! $+commands[rex] )); then
+  print -u2 "Install and open Rex before running setup-rex."
+  exit 1
+fi
+
+client=$(rex --autostart=false client ls --json | jq -er '
+  .clients | map(select(.info.kind == "app" and .principal.transport == "unix" and .connection_state == "connected")) |
+  if length == 1 then .[0].client_id
+  else error("Open exactly one local Rex app before running setup-rex") end
+')
+
+theme_dir=$(mktemp -d "${TMPDIR:-/tmp}/rex-theme.XXXXXX")
+trap 'rm -rf "$theme_dir"' EXIT
+# Turn signals into exits so Zsh also removes the download on interruption.
+trap 'exit 130' INT
+trap 'exit 143' TERM
+theme="$theme_dir/Snazzy Soft"
+curl --fail --location --silent --show-error --connect-timeout 10 --max-time 60 \
+  'https://raw.githubusercontent.com/mbadolato/iTerm2-Color-Schemes/4762ad5bd6d3906e28babdc2bda8a967d63a63be/ghostty/Snazzy%20Soft' \
+  --output "$theme"
+printf '5311deab8a51b08c55121c035a0a3a1967c7d7fa7e38622662c401a7f49dcd8f  %s\n' "$theme" | shasum -a 256 -c -
+rex --autostart=false config check
+rex --autostart=false -C "$client" do client.theme.import "path=$theme"
+
+# Rex reads these preferences at launch; leave its app and server running.
+domain=com.superlogical.rex
+defaults write $domain Workspace.appIcon -string dark
+defaults write $domain Workspace.appIconVisibility -string dockOnly
+defaults write $domain Workspace.appearance -string dark
+defaults write $domain Workspace.hiddenChromeButtons -array commandPalette newTab
+defaults write $domain Workspace.inactivePaneFadeMode -string text
+defaults write $domain Workspace.interfaceStyle -string useTheme
+defaults write $domain Workspace.paneDensity -string compact
+defaults write $domain Workspace.playsProgramActivitySounds -bool false
+defaults write $domain Workspace.showsPaneHeaders -bool true
+defaults write $domain Workspace.showsProcessesInActivity -bool true
+defaults write $domain Workspace.showsProgramActivityDockBadge -bool false
+defaults write $domain Workspace.sidebarPosition -string left
+defaults write $domain Workspace.tabIconColorMode -string activePanes
+defaults write $domain Workspace.tabStyle -string vertical
+defaults write $domain Workspace.terminalCopyAnimation -bool false
+defaults write $domain Workspace.terminalCursorBlinkIntervalMilliseconds -int 0
+defaults write $domain Workspace.terminalCursorBlinkUsesCustomInterval -bool false
+defaults write $domain Workspace.terminalFallbackFontNames -array "PingFang SC"
+defaults write $domain Workspace.terminalFontName -string "Maple Mono Normal NF CN"
+defaults write $domain Workspace.terminalFontPointSize -float 14
+defaults write $domain Workspace.terminalImproveTextContrast -bool false
+defaults write $domain Workspace.terminalOptionKeyBehavior -string actsAsAlt
+defaults write $domain Workspace.terminalPaddingColor -string background
+defaults write $domain Workspace.terminalSelectionRoundedCorners -bool false
+defaults write $domain Workspace.terminalUsesDisplayP3 -bool true
+defaults write $domain Workspace.usesStandardInactiveWindowPaneStyles -bool false
+
+rex --autostart=false config reload
+print "Reopen the Rex app to apply terminal preferences; leave Rex Server running."
