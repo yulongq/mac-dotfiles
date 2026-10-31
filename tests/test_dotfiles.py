@@ -230,7 +230,7 @@ class DotfilesTests(unittest.TestCase):
         for flags in ("-lc", "-ic"):
             with self.subTest(shell=flags):
                 result = run("/bin/zsh", flags,
-                             "command -v node java mvn go; print -rl -- $path; print -r -- $DOTFILES_PROFILE_FIXTURE $DOTFILES_PROFILE_SUFFIX",
+                             "command -v node java mvn go; print -rl -- $path; print -r -- $DOTFILES_PROFILE_FIXTURE $DOTFILES_PROFILE_SUFFIX; /usr/bin/env | /usr/bin/grep -E '^(NO_PROXY|no_proxy)='",
                              env=environment, cwd=self.destination)
                 self.assertIn(str(self.destination / ".asdf/shims/node"), result.stdout)
                 self.assertIn(str(self.destination / "dep/graalvm-jdk-25.0.4.1+1.1/Contents/Home/bin/java"), result.stdout)
@@ -240,6 +240,10 @@ class DotfilesTests(unittest.TestCase):
                     str(self.destination / ".asdf/shims"), str(self.destination / ".local/bin"),
                 )]
                 self.assertEqual(len(paths), 2, result.stdout)
+                bypasses = dict(line.split("=", 1) for line in result.stdout.splitlines()
+                                if line.startswith(("NO_PROXY=", "no_proxy=")))
+                for name in ("NO_PROXY", "no_proxy"):
+                    self.assertEqual(set(bypasses[name].split(",")), {"localhost", "127.0.0.1", "::1"})
                 if flags == "-lc":
                     self.assertIn("retained preserved", result.stdout)
 

@@ -27,6 +27,8 @@ export FZF_ALT_C_COMMAND='fd --type d . --color=never'
 export https_proxy=http://127.0.0.1:6152
 export http_proxy=http://127.0.0.1:6152
 export all_proxy=socks5://127.0.0.1:6153
+export NO_PROXY="localhost,127.0.0.1,::1"
+export no_proxy="$NO_PROXY"
 
 # OrbStack contributes completion paths before the interactive shell runs compinit.
 [[ ! -r "$HOME/.orbstack/shell/init.zsh" ]] || source "$HOME/.orbstack/shell/init.zsh"

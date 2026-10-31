@@ -24,6 +24,12 @@ The live home was missing `~/Brewfile` and the managed `new-branch` skill despit
 
 **Declare the implementation a helper needs and run that helper through the installed shell.** A command name's presence does not establish support for its flags. `ct` needed Universal Ctags while the shell found BSD ctags. Its repair required the package declaration, actual installation, fresh-shell resolution, and generation of project and Bundler dependency tags.
 
+## Local gateways and proxy bypass
+
+**Export loopback exclusions in both `NO_PROXY` and `no_proxy` alongside shell proxy settings.** Clients can honor different variable spellings, and Surge's Global Proxy mode skips the LAN direct rules that protect local gateways in Rule mode. The shared shell contract checks both variables through login and interactive entry points.
+
+Pi's installed network module connected to Surge's HTTP listener without the exclusions and directly to Magpie with them. Sending the local gateway request through the selected remote proxy returned EOF while DeepSeek's API remained reachable through that proxy. Upstream connectivity alone therefore did not establish that the client could reach its local gateway.
+
 ## Destructive target paths
 
 **Resolve the effective path before a recursive delete.** A string-prefix check does not constrain a trailing separator, `..`, or a symlinked parent, and `rsync --delete` acts on the resolved location. Resolve `HOME` and the target, require the exact registry path, re-check after creating it, and test rejection with `$HOME/`, `..`, and a symlinked parent while asserting that outside content survives.
