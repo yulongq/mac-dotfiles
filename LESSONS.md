@@ -44,6 +44,8 @@ The Claude Code shell suites were outside the standard runner, and Codex tests d
 
 The live registry contained the managed skills and an independent Git working tree with uncommitted changes alongside unmanaged siblings. The follow-up backed up the pre-change registry and made the target a repo-rebuilt registry instead of preserving unowned siblings.
 
+**Reconcile both sides after a source rollback, and check nested extras before rebuilding.** A Git reset can remove adopted source while leaving its deployed skills intact. Compare the live files with the prior commit and the user's recorded decisions before deciding which side to retain. The Rex, Herdr, and tldraw reconciliation found exactly this split. A separate temporary-home regression showed that chezmoi status alone missed a destination-only nested skill file; `scripts/check-home` now also uses a recursive rsync dry run to report those extras without removing them.
+
 ## Upstream review coverage
 
 **Record selective adoption without inventing complete review coverage.** Under the [upstream review contract](.agents/skills/review-upstreams/SKILL.md#establish-the-comparison), `observed_revision` records discovery, `reviewed_through` records fully accounted coverage, and `pending` records unresolved work with a reconsideration condition. Reconcile those records when adopting changes; an empty cursor needs the initial capability review before it can advance.

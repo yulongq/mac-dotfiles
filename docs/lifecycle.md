@@ -38,6 +38,8 @@ Read `-` as destination-only and `+` as rendered-source-only. Preserve unrelated
 
 Use `scripts/check-home home "$target"` or `scripts/check-home agent-policy "$target"` for a read-only deployment check. Supply explicit non-secret targets; the command exits nonzero for drift or a chezmoi error and prints only status paths, without configuration contents. Modifiers preserve the application-owned values defined in the ownership contract, so those write-backs are clean; reported differences require a scoped diff and an ownership decision. The check does not certify runtime activation. For example, check `~/Brewfile` and `~/.config/homebrew` in the home source, and `~/.agents/skills` in the Agent source.
 
+For the full `~/.agents/skills` target, the check also reports destination-only nested files that the recursive rebuild would remove. Resolve each difference against its source and ownership before running `scripts/install-skills`; modification-time differences alone are not configuration drift.
+
 ## Apply
 
 Establish one writer for the selected destination before applying. Coordinate other editing sessions and use the application's own setting API or a quiescent application when it writes this file itself. Re-read the target before writing; if it differs from the reviewed version, regenerate the candidate and review its actual changes. A pre-write hash check alone does not prevent a concurrent write: when writers cannot be coordinated and no atomic version precondition is available, leave deployment pending.
@@ -56,7 +58,7 @@ Record results per target as source-validated, applied but awaiting activation, 
 
 ## Review upstream changes
 
-The [review-upstreams workflow](../.agents/skills/review-upstreams/SKILL.md) refreshes the sources in `maintenance/upstreams.toml`, compares immutable revisions, evaluates personal applicability, and records authorized decisions. It owns the review cursor and pending-item semantics. A review can recommend changes without adopting them; selected implementation and local deployment follow the requested scope.
+The [review-upstreams workflow](../.agents/skills/review-upstreams/SKILL.md) refreshes the sources in `maintenance/upstreams.toml`, compares immutable revisions, extracts supported lessons, and evaluates their local relevance. It owns the review cursor and pending-item semantics. Useful lessons can justify keeping the current implementation; selected adaptations, review-record updates, and deployment follow the requested scope.
 
 Before deploying, compare the actual source and target versions with those validated. If either changed, repeat the affected review and validation. A source-only task finishes with deployment explicitly unperformed; a requested deployment remains incomplete until its required runtime checks pass or a concrete blocker is reported.
 

@@ -147,6 +147,27 @@ class AgentConfigTests(unittest.TestCase):
         run(str(ROOT / "scripts/install-skills"), env=self.environment)
         self.assertEqual((target / "commit/SKILL.md").read_bytes(), before)
 
+    def test_check_home_detects_nested_skill_drift(self):
+        checkout = self.base / "checkout"
+        source = checkout / "agent-policy/dot_agents/exact_skills/managed"
+        source.mkdir(parents=True)
+        (source / "SKILL.md").write_text("managed\n")
+        script = checkout / "scripts/check-home"
+        script.parent.mkdir()
+        shutil.copy2(ROOT / "scripts/check-home", script)
+        target = self.destination / ".agents/skills"
+        shutil.copytree(source.parent, target)
+        command = [str(script), "agent-policy", str(target)]
+        self.assertEqual(run(*command, env=self.environment).stdout, "")
+
+        extra = target / "managed/references/unmanaged.md"
+        extra.parent.mkdir()
+        extra.write_text("keep until reviewed\n")
+        result = subprocess.run(command, text=True, capture_output=True, env=self.environment)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("managed/references/unmanaged.md", result.stdout)
+        self.assertEqual(extra.read_text(), "keep until reviewed\n")
+
     def test_install_skills_rejects_unsafe_targets(self):
         outside = self.base / "outside"
         outside.mkdir()

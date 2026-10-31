@@ -34,11 +34,13 @@ Validation renders into unique temporary homes, checks repeated application for 
 
 Enable the same validation before pushes from this checkout with `git config --local core.hooksPath .githooks`. Inspect any existing local hook selection before replacing it. The hook runs `scripts/validate` and aborts the push if a check fails.
 
+Historical Agent tasks and their measurement boundaries are recorded in the [workflow baseline](docs/agent-workflows.md). Its read-only collector measures existing session records without replaying actions or claiming instruction improvements.
+
 ## Repository workflows
 
 Use [apply-config](.agents/skills/apply-config/SKILL.md) to preview or apply this repository's selected configuration and verify the actual consumers. For example, ask `$apply-config apply the shell configuration`, or `$apply-config preview the Codex settings without writing them`. Ordinary home configuration and explicitly selected Agent targets have separate deployment scopes.
 
-Use [review-upstreams](.agents/skills/review-upstreams/SKILL.md) to refresh the two recorded sources and assess useful changes. For example, ask `$review-upstreams check recent changes and recommend what fits this setup`. A review refreshes isolated reference data and reports candidates; adopting recommendations or applying them locally follows the requested scope.
+Use [review-upstreams](.agents/skills/review-upstreams/SKILL.md) to extract lessons from the two recorded sources and assess what fits this environment. For example, ask `$review-upstreams check recent changes and explain what we can learn from them`. A review explains the problems, mechanisms, and local relevance; useful learning can require no configuration change. Implementing selected adaptations or applying them locally follows the requested scope.
 
 The skills stay in this checkout, support automatic discovery, and can also be invoked by name. Validate their structure, links, and CLI contracts with:
 

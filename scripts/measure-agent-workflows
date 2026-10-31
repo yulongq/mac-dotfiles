@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Measure bounded historical cases through sessidx without invoking agents."""
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import tomllib
+import uuid
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_cases(path):
+    contents = path.read_bytes()
+    catalog = tomllib.loads(contents.decode())
+    catalog["catalog_sha256"] = hashlib.sha256(contents).hexdigest()
+    cases = catalog["cases"]
+    ids = set()
+    for case in cases:
+        identifier = case["id"]
+        if not re.fullmatch(r"[a-z][a-z0-9-]*", identifier) or identifier in ids:
+            raise ValueError(f"Invalid or duplicate case id: {identifier}")
+        ids.add(identifier)
+        uuid.UUID(case["session"])
+        if case["agent"] not in {"claude", "codex", "pi"}:
+            raise ValueError(f"{identifier}: unknown runtime")
+        first, last = case["first_line"], case["last_line"]
+        if not 0 < first <= last or not case["evidence"] or not case["expect"]:
+            raise ValueError(f"{identifier}: missing span, evidence, or expectations")
+        if any(not first <= line <= last for line in case["evidence"]):
+            raise ValueError(f"{identifier}: evidence outside its measured span")
+    if not cases:
+        raise ValueError("No workflow cases")
+    return catalog
+
+
+def query_index(sql):
+    result = subprocess.run(["sessidx", "sql", sql], text=True,
+                            capture_output=True, timeout=30)
+    if result.returncode not in (0, 1):
+        result.check_returncode()
+    records = [json.loads(line) for line in result.stdout.splitlines()]
+    ends = [record for record in records if record.get("type") == "end"]
+    if len(ends) != 1 or records[-1] != ends[0]:
+        raise RuntimeError("sessidx did not return a terminal coverage record")
+    end = ends[0]
+    refresh = end.get("refresh", {})
+    if (not end.get("complete") or end.get("error") or end.get("stale")
+            or end.get("unavailable_ranges") or refresh.get("stale")
+            or refresh.get("writer_busy") or refresh.get("continuation")):
+        raise RuntimeError("sessidx coverage is incomplete; complete `sessidx index` before measuring")
+    return [record["data"] for record in records if record.get("type") == "row"]
+
+
+def measure(cases):
+    values = ",".join(
+        f"('{case['id']}','{case['agent']}','{uuid.UUID(case['session'])}',"
+        f"{case['first_line']},{case['last_line']})" for case in cases
+    )
+    targets = f"WITH targets(id,agent,session_id,first,last) AS (VALUES {values})"
+    sessions = query_index(targets + """
+        SELECT t.id, s.file_id, s.path
+        FROM targets t LEFT JOIN sessions s ON s.agent=t.agent
+            AND s.session_id=t.session_id AND s.session_kind='main'
+        ORDER BY t.id
+    """)
+    for case in cases:
+        found = [row for row in sessions if row["id"] == case["id"] and row["file_id"] is not None]
+        if len(found) != 1:
+            raise RuntimeError(f"{case['id']}: expected one indexed main transcript, found {len(found)}")
+    spans = targets + """, spans AS (
+        SELECT t.*, s.file_id FROM targets t JOIN sessions s ON s.agent=t.agent
+            AND s.session_id=t.session_id AND s.session_kind='main'
+    )"""
+    calls = query_index(spans + """
+        SELECT t.id, COUNT(c.id) AS calls,
+            COUNT(CASE WHEN c.ok=0 THEN 1 END) AS failed,
+            COUNT(CASE WHEN c.ok=1 THEN 1 END) AS succeeded,
+            COUNT(CASE WHEN c.id IS NOT NULL AND c.ok IS NULL THEN 1 END) AS outcome_unknown
+        FROM spans t LEFT JOIN call_outcomes c ON c.file_id=t.file_id
+            AND c.line_no BETWEEN t.first AND t.last GROUP BY t.id
+    """)
+    fields = ("input", "cache_read", "cache_write", "output", "reasoning")
+    token_columns = ",".join(
+        f'SUM(p."{field}") AS "{field}", COUNT(p."{field}") AS "{field}_recorded"'
+        for field in fields
+    )
+    usage = query_index(spans + f"""
+        SELECT t.id, p.model, COUNT(p.request_id) AS passes, {token_columns}
+        FROM spans t JOIN requests r ON r.file_id=t.file_id
+            AND r.line_no BETWEEN t.first AND t.last
+        JOIN request_passes p ON p.request_id=r.id GROUP BY t.id, p.model
+    """)
+    evidence = query_index(spans + """
+        SELECT t.id, e.line_no FROM spans t JOIN events e ON e.file_id=t.file_id
+            AND e.line_no BETWEEN t.first AND t.last GROUP BY t.id, e.line_no
+    """)
+    output = []
+    for case in cases:
+        available = {row["line_no"] for row in evidence if row["id"] == case["id"]}
+        missing = set(case["evidence"]) - available
+        if missing:
+            raise RuntimeError(f"{case['id']}: missing evidence lines {sorted(missing)}")
+        output.append({
+            **case,
+            "transcript": next(row["path"] for row in sessions if row["id"] == case["id"]),
+            "calls": next({key: value for key, value in row.items() if key != "id"}
+                          for row in calls if row["id"] == case["id"]),
+            "usage": [{key: value for key, value in row.items() if key != "id"}
+                      for row in usage if row["id"] == case["id"]],
+        })
+    return output
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cases", type=Path, default=ROOT / "maintenance/agent-workflows.toml")
+    args = parser.parse_args()
+    catalog = load_cases(args.cases)
+    report = {
+        "purpose": catalog["purpose"],
+        "sampling": catalog["sampling"],
+        "historical_configuration": catalog["historical_configuration"],
+        "catalog_sha256": catalog["catalog_sha256"],
+        "collector_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "sessidx_version": subprocess.run(["sessidx", "--version"], check=True, text=True,
+                                          capture_output=True, timeout=10).stdout.strip(),
+        "latency": "unmeasured: transcript spans include human pauses and resumed work",
+        "cost": "unmeasured: recorded tokens do not establish billing",
+        "cases": measure(catalog["cases"]),
+    }
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

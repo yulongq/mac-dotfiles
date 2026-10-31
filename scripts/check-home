@@ -16,3 +16,17 @@ if [ -n "$status" ]; then
   printf '%s\n' "$status"
   exit 1
 fi
+
+if [ "$source_dir" = "$repo/agent-policy" ]; then
+  for target do
+    if [ "${target%/}" = "$HOME/.agents/skills" ]; then
+      # chezmoi checks managed files; rsync also finds destination-only nested files.
+      status=$(rsync -rlni --delete -- "$source_dir/dot_agents/exact_skills/" "${target%/}/")
+      status=$(printf '%s\n' "$status" | sed -n '/^\*deleting /p')
+      if [ -n "$status" ]; then
+        printf '%s\n' "$status"
+        exit 1
+      fi
+    fi
+  done
+fi

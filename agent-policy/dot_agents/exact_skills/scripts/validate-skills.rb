@@ -86,6 +86,9 @@ end
 # behavior, and give every entry an output regex naming the depended-on flags
 # or route; an entry that only proves the command exits 0 asserts nothing.
 CLI_SMOKE_COMMANDS = [
+  ["rex installed guide", %w[rex --autostart=false __internal skill], /(?=.*--focus=false)(?=.*--keep-open)(?=.*program_status|.*block call)/m],
+  ["orc Rex window launch", %w[rex window new --help], /(?=.*--focus)(?=.*--keep-open)(?=.*--shell)/m],
+  ["orc Rex action targets", %w[rex do --help], /(?=.*--session)(?=.*--block)/m],
   ["context7 global options", %w[ctx7 --help], /--base-url <url>/],
   ["context7 library resolve contract", %w[ctx7 library --help], /(?=.*<name>)(?=.*\[query\])/m],
   ["context7 docs query contract", %w[ctx7 docs --help], /(?=.*<libraryId>)(?=.*<query>)/m],

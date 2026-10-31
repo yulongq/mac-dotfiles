@@ -8,6 +8,6 @@ During authorized corrective work, update the corresponding entry in [LESSONS.md
 
 ## Upstream changes
 
-Upstream revisions in `maintenance/upstreams.toml` supply candidate changes; accepted changes belong in this checkout. Do not edit a reference checkout to make it match this machine.
+Upstream revisions in `maintenance/upstreams.toml` supply evidence for lessons and possible local improvements. Establish the problem, mechanism, and local need before proposing a change; an already-covered problem can yield useful learning without implementation. Accepted adaptations belong in this checkout. Do not edit a reference checkout to make it match this machine.
 
 Authorized adoption includes reconciling the inspected revision and unresolved work in that manifest; `reviewed_through` records accounted review coverage, independently of which changes were adopted. Read-only reviews report proposed record changes without writing them.
