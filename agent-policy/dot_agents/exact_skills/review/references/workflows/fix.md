@@ -8,14 +8,15 @@ Run fixes in a fresh write-capable fix-orchestrator subagent against a local wri
 
 Pass the writable repo root, review scope/base, repo instructions, and validation commands. For each fixable finding, pass severity, `path:line`, provenance, exact diff contribution, root cause, reachable trigger, decisive evidence, consequence, fix direction, remedy prerequisites, and direct dependents. Also pass absolute paths to `SKILL.md` and this file, requiring the fixer to read both completely before mutation. If either is inaccessible in its runtime, inline the Finding Bar plus this workflow's scope, baseline, secret-classifier, mutation, and stop rules. Do not pass dropped, manual, speculative, weak, repeated, or raw second-opinion content.
 
-Before editing, create a NUL-delimited scope file containing only frontier paths and direct dependents the fixes may require. Exclude unrelated dirty files. Run the helper, which enforces the secret-path classifier and creates a scoped Git baseline:
+Before editing, create a NUL-delimited scope file containing only frontier paths and direct dependents the fixes may require. Exclude unrelated dirty files and protected inputs. Retain the review's non-value evidence for ordinary classifications and pass its optional classification file to the helper, which checks the same paths before creating a scoped Git baseline:
 
 ```bash
 REVIEW_SKILL_FILE="<absolute SKILL.md path passed to this fixer>"
 REVIEW_SKILL_DIR="${REVIEW_SKILL_FILE%/SKILL.md}"
 FIX_SCOPE_FILE=$(mktemp)
 # Write allowed repo-relative paths to FIX_SCOPE_FILE as NUL-delimited records.
-BASELINE=$(bash "$REVIEW_SKILL_DIR/scripts/review-fix-baseline.sh" "$FIX_SCOPE_FILE") || exit $?
+# Set CLASSIFIED_ORDINARY_FILE to the review's classification file when one exists.
+BASELINE=$(bash "$REVIEW_SKILL_DIR/scripts/review-fix-baseline.sh" "$FIX_SCOPE_FILE" "${CLASSIFIED_ORDINARY_FILE:-}") || exit $?
 ```
 
 Do not use `git stash create` or snapshot the whole working tree. Add an untracked file only when a frontier item cites it and the path classifier accepts it.

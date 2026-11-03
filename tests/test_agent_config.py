@@ -21,12 +21,14 @@ class AgentConfigTests(unittest.TestCase):
         self.destination = self.base / "home"
         self.destination.mkdir()
         for name in (
+            ".chezmoitemplates/claude/claude.json",
             ".chezmoitemplates/claude/settings.json",
             ".chezmoitemplates/codex/config.toml",
             ".chezmoitemplates/pi/settings.json",
             "dot_claude/modify_private_settings.json",
             "dot_codex/modify_private_config.toml",
             "private_dot_pi/private_agent/modify_private_settings.json",
+            "modify_private_dot_claude.json",
         ):
             target = self.source / name
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -86,7 +88,36 @@ class AgentConfigTests(unittest.TestCase):
         self.assertEqual(actual["sandbox"]["network"]["allowUnixSockets"], [])
         self.assertNotIn("obsolete@example", actual["enabledPlugins"])
 
+    def test_claude_account_state_stays_private(self):
+        current = {
+            "hostState": {"preference": "keep"},
+            "externalEditorContext": False,
+            "mcpServers": {
+                "chrome-devtools": {"type": "http", "url": "https://obsolete.example.invalid"},
+                "host-server": {"command": "host-command"},
+            },
+        }
+        target = self.destination / ".claude.json"
+        target.write_text(json.dumps(current))
+        target.chmod(0o600)
+        self.apply(".claude.json")
+        actual = json.loads(target.read_text())
+        self.assertEqual(actual["hostState"], current["hostState"])
+        self.assertTrue(actual["externalEditorContext"])
+        self.assertEqual(actual["mcpServers"]["host-server"], current["mcpServers"]["host-server"])
+        self.assertEqual(actual["mcpServers"]["chrome-devtools"]["type"], "stdio")
+        self.assertNotIn("url", actual["mcpServers"]["chrome-devtools"])
+        self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+
+        target.write_text(json.dumps(actual, indent=4) + "\n")
+        target.chmod(0o644)
+        before = target.read_bytes()
+        self.apply(".claude.json")
+        self.assertEqual(target.read_bytes(), before)
+        self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+
     def test_fresh_configuration_and_idempotence(self):
+        account = self.apply(".claude.json")
         claude = self.apply(".claude/settings.json")
         codex = self.apply(".codex/config.toml")
         settings = json.loads(claude.read_text())
@@ -105,7 +136,7 @@ class AgentConfigTests(unittest.TestCase):
         # Equal values must preserve existing text, including harmless formatting.
         claude.write_text(json.dumps(settings, indent=4) + "\n")
         codex.write_text("# Retain local formatting.\n" + codex.read_text())
-        for target in (claude, codex):
+        for target in (account, claude, codex):
             before = target.read_bytes()
             self.apply(str(target.relative_to(self.destination)))
             self.assertEqual(target.read_bytes(), before)

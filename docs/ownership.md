@@ -48,6 +48,7 @@ The modifiers own how source and destination combine. Review their field boundar
 
 | Surface | Ownership and removal behavior |
 | --- | --- |
+| Claude Code account state | `agent-policy/modify_private_dot_claude.json` keeps `~/.claude.json` owner-readable and writable (`0600`), overlays declared preferences, and replaces each source-declared MCP server whole. Undeclared account state and servers survive; a permission-only repair preserves the file's bytes. |
 | Claude Code `env` | Source owns each declared variable. Host routes and `ANTHROPIC_DEFAULT_*_MODEL` mappings remain undeclared and survive. Removing a declaration leaves its destination value until explicit retirement. |
 | Claude Code `sandbox.network.allowUnixSockets` | The existing host list survives, including an intentionally empty list. A missing list is seeded with the sandbox temporary directory and the 1Password SSH socket. Changing the seed does not update existing hosts. |
 | Claude Code `model` and `modelSettings` | A missing model is seeded as `opus`; subsequent model choices and saved effort levels remain application-owned. |

@@ -2,7 +2,7 @@
 paths:
   - ".chezmoitemplates/claude/claude.json"
   - ".chezmoitemplates/claude/settings.json"
-  - "modify_dot_claude.json"
+  - "modify_private_dot_claude.json"
   - "dot_claude/modify_private_settings.json"
   - "dot_claude/CLAUDE.md.tmpl"
   - "dot_claude/hooks/**/*"
@@ -29,7 +29,7 @@ Use a seed when the application or host owns subsequent choices. `/model` owns t
 
 Declare no effort setting. `/effort` saves each model's level under `modelSettings`, so keep that key undeclared: a managed subtree would erase the saved levels on every apply. A top-level `effortLevel` cannot stand in as a seed because Opus 5.5 ignores it, so a new machine starts Opus 5.5 at `medium` until `/effort` saves a level. Keep `CLAUDE_CODE_EFFORT_LEVEL` unset: it overrides every session's effort, and `/effort` then reports that its change was not applied.
 
-`~/.claude.json` has no seeds. `modify_dot_claude.json` overlays its declared keys and replaces each source-declared MCP server whole, so removed transport fields disappear; undeclared servers and all other state stay intact.
+`~/.claude.json` has no seeds. `modify_private_dot_claude.json` overlays its declared keys and replaces each source-declared MCP server whole, so removed transport fields disappear; undeclared servers and all other state stay intact.
 
 ## Session retention and unattended runs
 
@@ -92,7 +92,7 @@ The classifier reads `autoMode` from user settings, managed settings, and the `-
 
 ## Integrations
 
-- `CLAUDE_CODE_ENABLE_CFC=0` explicitly disables Claude in Chrome; it does not govern the separately permitted `chrome-devtools` MCP tools. Keep the explicit false value as a guard: when it is unset the client falls back to the `claudeInChromeDefaultEnabled` key in `~/.claude.json`, and only with neither present is Claude in Chrome off. Do not add that key to `modify_dot_claude.json`; the environment variable already outranks it.
+- `CLAUDE_CODE_ENABLE_CFC=0` explicitly disables Claude in Chrome; it does not govern the separately permitted `chrome-devtools` MCP tools. Keep the explicit false value as a guard: when it is unset the client falls back to the `claudeInChromeDefaultEnabled` key in `~/.claude.json`, and only with neither present is Claude in Chrome off. Do not add that key to `modify_private_dot_claude.json`; the environment variable already outranks it.
 - Keep `CLAUDE_CODE_DISABLE_CRON=1` with the bare `ScheduleWakeup` deny while local scheduling is retired. The environment variable removes `/loop` and the Cron tools, but the client still registers `ScheduleWakeup` eagerly. Cloud Routines are account-owned and unaffected. Remove the deny only after a cleanly restarted session and a resumed session, both with the environment flag enabled, cannot create, retain, or execute a scheduled wakeup through any exposed scheduling surface.
 - `disableClaudeAiConnectors=true` is the source of truth for blocking auto-fetched claude.ai connectors; explicitly configured MCP servers remain available.
 - `disableBundledSkills=true` keeps the repository-managed skill registry authoritative. Keep the separate `disableWorkflows` setting unset because `ultracode` depends on dynamic workflows.

@@ -17,12 +17,12 @@ local shells = { bash = true, fish = true, sh = true, zsh = true }
 local alert = [[
 ObjC.import("AppKit")
 function run(argv) {
-  const [program, cli, session, block] = argv
+  const [message, cli, session, block] = argv
   const app = $.NSApplication.sharedApplication
   const rex = $.NSRunningApplication.runningApplicationsWithBundleIdentifier("com.superlogical.rex").firstObject
   const alert = $.NSAlert.alloc.init
   alert.messageText = "Close Pane?"
-  alert.informativeText = program + " is still running. If you close the pane the process will be killed."
+  alert.informativeText = message + " Closing the pane will end its program."
   const choice = $.NSUserDefaults.alloc.initWithSuiteName("com.superlogical.rex").stringForKey("Workspace.appIcon").js
   const chosen = choice && $.NSBundle.bundleWithURL(rex.bundleURL).imageForResource("PlainAppIcon" + choice[0].toUpperCase() + choice.slice(1) + "Beta")
   alert.icon = chosen && !chosen.isNil() ? chosen : rex.icon
@@ -31,12 +31,33 @@ function run(argv) {
   app.setActivationPolicy($.NSApplicationActivationPolicyAccessory)
   app.activateIgnoringOtherApps(true)
   app.performSelectorWithObjectAfterDelayInModes("abortModal", $(), 20, $([$.NSModalPanelRunLoopMode]))
-  if (alert.runModal == $.NSAlertFirstButtonReturn) {
+  const response = alert.runModal
+  $.NSObject.cancelPreviousPerformRequestsWithTarget(app)
+  if (response == $.NSAlertFirstButtonReturn) {
     // Close by ID the pane the key was pressed in, which need not have focus by now.
     const close = $.NSTask.alloc.init
     close.executableURL = $.NSURL.fileURLWithPath(cli)
-    close.arguments = $(["--autostart=false", "block", "close", "-s", session, block])
-    close.launchAndReturnError(null)
+    close.arguments = $(["--autostart=false", "--timeout=5s", "block", "close", "-s", session, block])
+    const stderr = $.NSPipe.pipe
+    close.standardError = stderr
+    let failure
+    if (close.launchAndReturnError(null)) {
+      const output = stderr.fileHandleForReading.readDataToEndOfFile
+      close.waitUntilExit
+      if (close.terminationStatus != 0) {
+        failure = $.NSString.alloc.initWithDataEncoding(output, $.NSUTF8StringEncoding).js || "Rex exited with status " + close.terminationStatus + "."
+      }
+    } else {
+      failure = "The Rex command could not be started."
+    }
+    if (failure) {
+      const error = $.NSAlert.alloc.init
+      error.messageText = "Could Not Close Pane"
+      error.informativeText = failure
+      error.icon = alert.icon
+      error.addButtonWithTitle("OK")
+      error.runModal
+    }
   }
   if (app.isActive) rex.activateWithOptions(0)
 }
@@ -66,20 +87,20 @@ rex.action{
     -- A failed lookup asks, because a wrong guess ends a running program.
     local idle = info and (info.last_exit or (foreground and shells[foreground.name] and (foreground.argv0 or ""):sub(1, 1) == "-"))
     if idle then
-      rex.call("block.close", { session_id = ctx.session_id, block_id = ctx.block_id })
+      assert(rex.call("block.close", { session_id = ctx.session_id, block_id = ctx.block_id }))
       return
     end
-    local program = "A program"
+    local message = "The pane's program status is unavailable."
     if foreground then
-      program = (foreground.script or foreground.argv0 or foreground.name):match("[^/]+$")
+      message = (foreground.script or foreground.argv0 or foreground.name):match("[^/]+$") .. " is still running."
     end
     -- The server runs a client's keys, actions, and focus changes one at a time
     -- (`rex api describe client.action`), so waiting here would hold the clicks
     -- the app sends during the alert until the pane is gone, and they would then
     -- fail. The alert therefore runs detached and closes the pane itself, and
     -- without a shell, so that killing its handle ends the alert.
-    pending = rex.exec.start({
-      "osascript", "-l", "JavaScript", "-e", alert, program, cli, ctx.session_id, ctx.block_id,
-    }, { detach = true })
+    pending = assert(rex.exec.start({
+      "osascript", "-l", "JavaScript", "-e", alert, message, cli, ctx.session_id, ctx.block_id,
+    }, { detach = true }))
   end,
 }

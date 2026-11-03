@@ -5,24 +5,18 @@
 [sources.liby]
 url = "https://github.com/liby/dotfiles.git"
 ref = "refs/heads/main"
-# Rewritten history: prior cursor 1f5c663edd4bc729740c43d3f1619c7382742cc6
-# and dbdd3aaf681af96c9aefa4df0f87aa6b20ed2be1 share tree
-# 8ad88ecbcffa945619d928137704e12dcfa89c9d; the review continues from that tree.
-observed_revision = "4330f46943a0011d4f8cdc00ab21f2d690a58a5f"
-reviewed_through = "ee37dd036bf6ea5e93c2f08275a50d7240a4977f"
+# Recovered ee37dd036bf6ea5e93c2f08275a50d7240a4977f after history rewriting.
+# Its tree differs from 80a14261442bdb07d1574724ac50fb3e2be2e601 only in
+# compaction-reminder.md, agents/tools.md, and CONCEPTS.md; those differences
+# and the following 52 commits were reviewed. Ciphertext and brew.env stayed opaque.
+observed_revision = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
+reviewed_through = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
 
 [sources.joshukraine]
 url = "https://github.com/joshukraine/dotfiles.git"
 ref = "refs/heads/master"
-observed_revision = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
-reviewed_through = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
-
-[[pending]]
-source = "liby"
-revision = "4330f46943a0011d4f8cdc00ab21f2d690a58a5f"
-change = "Reconcile the unavailable liby review cursor"
-reason = "The recorded reviewed_through commit is absent from the fetched main history. Only the current Rex setup files were inspected for this adoption."
-revisit_when = "Before the next general upstream review, recover the prior cursor or establish an equivalent tree and account for the remaining changes before advancing reviewed_through."
+observed_revision = "6f042b0eefe8b3cc0e5d84cacac982f6f7bd1169"
+reviewed_through = "6f042b0eefe8b3cc0e5d84cacac982f6f7bd1169"
 
 [[pending]]
 source = "liby"
@@ -56,15 +50,15 @@ revisit_when = "When another extension is selected, inspect that pinned extensio
 source = "liby"
 revision = "ee37dd036bf6ea5e93c2f08275a50d7240a4977f"
 change = "Activate the adopted shell initialization, output scanner, and skill updates"
-reason = "Source adoption does not deploy home or Agent targets. Gitleaks is declared but not installed; the selected shell files and scanner rules must be applied together, and the exact skill registry must be rebuilt before fresh sessions can load the changes."
+reason = "Source adoption does not establish activation. The selected shell files and scanner rules must be reconciled together, and fresh sessions must load the intended shared skill registry; installed dependencies alone do not prove either."
 revisit_when = "On an authorized deployment, satisfy each target's recovery and host prerequisites, reconcile the selected targets, check fresh login and interactive shells, exercise the live hook, and verify skill loading in each affected Agent runtime."
 
 [[pending]]
 source = "liby"
-revision = "4cb851f4af209ba1e0029958950ea6aaebd95b57"
-change = "Evaluate the post-compaction state reminder"
-reason = "The reminder changes model behavior and overlaps existing global state-check instructions; structural hook acceptance does not establish that it improves continuation behavior."
-revisit_when = "When adopting the reminder, evaluate actual compact-and-continue sessions against the existing instructions and validate the affected runtime hook."
+revision = "7dddd7f5e92b319df82562598b23e7aa8a25d284"
+change = "Evaluate the post-compaction state and instruction reminder"
+reason = "The reminder now also restores complete skill instructions. It overlaps existing global state checks; structural hook acceptance does not establish improved continuation behavior."
+revisit_when = "When adopting the reminder, compare actual compact-and-continue sessions against the existing instructions, including restored skill bodies, and validate the affected runtime hook."
 
 [[pending]]
 source = "liby"
@@ -82,21 +76,56 @@ revisit_when = "When stacked pull requests are needed, evaluate the workflow aga
 
 [[pending]]
 source = "liby"
-revision = "e9e76905aeeffc430ea940d8f13b045ed378473a"
+revision = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
 change = "Evaluate broader Agent instruction and validation changes"
-reason = "These changes affect shared instruction semantics and evaluation requirements; they were not selected with the CLI-specific skill corrections."
-revisit_when = "When revising shared instructions, compare the current local behavior with the pinned upstream changes and complete the write-skill evaluation required for the selected semantics."
-
-[[pending]]
-source = "liby"
-revision = "661f53768336b5e19ab7ab46ea13bd5d97ebdf9d"
-change = "Reconcile glab and Herdr skill release compatibility"
-reason = "The version check reports glab 1.123.0 with skill metadata for 1.122.0, and Herdr 0.9.3 with skill metadata for 0.9.5. A mismatch alone does not authorize an upgrade or establish incompatibility."
-revisit_when = "Before changing either CLI or its release pin, compare the selected version's actual commands with the managed skill and validate the affected contracts."
+reason = "The review and write-skill rewrites, broader repair scope, folder trust, and host execution rules change semantics beyond the selected classifier and CLI corrections. Upstream authorization does not apply to this host."
+revisit_when = "When revising those workflows for a demonstrated local failure, compare the selected semantics with this host's authority contract and complete the required write-skill evaluation."
 
 [[pending]]
 source = "joshukraine"
-revision = "3ab164bd2a04d7292e66fbc50773d9c8b04e024c"
+revision = "6f042b0eefe8b3cc0e5d84cacac982f6f7bd1169"
 change = "Assess the updated Neovim plugin pins"
-reason = "The eight lockfile updates require editor and plugin-build checks; configuration rendering does not establish their compatibility with this host's setup."
+reason = "The prior lockfile changes and six further plugin pin updates require editor and plugin-build checks. The local plugin set also retains Avante and Copilot integrations absent upstream; the lockfile cannot be replaced wholesale."
 revisit_when = "When updating editor plugins, review the pinned release deltas and verify startup, build steps, language servers, and the selected AI integrations."
+
+[[pending]]
+source = "liby"
+revision = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
+change = "Activate the adopted configuration and skill corrections"
+reason = "The private Claude account-state modifier, unknown context display, Rex close error handling, review classifier, and glab skill are source changes. Live targets and the shared skill registry have not been updated by this adoption."
+revisit_when = "On authorized deployment, reconcile each selected target, verify the account-state mode and byte preservation, exercise statusline states and Rex alert/focus behavior, rebuild the registry, and check fresh-runtime loading."
+
+[[pending]]
+source = "liby"
+revision = "631d160d7a2abe891d2c8370b4b003aa365b2b0e"
+change = "Adapt sessidx snapshot and freshness guidance"
+reason = "The installed CLI is 0.0.12 while the skill records 0.0.11. The new guidance distinguishes paged snapshots and SQL completeness from current-log coverage; this was not selected with the glab correction."
+revisit_when = "When updating sessidx guidance, verify append-after-first-page, SQL before and after indexing, and writer contention using an isolated index before advancing the skill pin."
+
+[[pending]]
+source = "liby"
+revision = "cf7e5572535640d39d4be1ada6ddc1f1b84c2fe3"
+change = "Adapt Rex prompt delivery to paste events"
+reason = "The local workflow records long-input submission ambiguity. The installed API supports paste events, but interface acceptance does not prove one accurate turn submission in each Agent runtime."
+revisit_when = "When selecting the delivery change, verify single-line and multiline text, shell characters, busy or question-card states, and user drafts in task-owned panes, including exact receipt and completed output."
+
+[[pending]]
+source = "liby"
+revision = "085e68412b8303aaabd6cb2dec438066b84f63f7"
+change = "Evaluate Rexume result collection and related Agent integration"
+reason = "Native result collection is coupled to Rexume installation, hooks, plugin registration, cross-session delivery, and the Pi fullscreen workflow. These owners and activation changes were not selected."
+revisit_when = "When selecting Rexume, establish its installation and configuration owners, then verify registration before results, blocked and resumed rounds, complete answers, and release of only task-owned resources."
+
+[[pending]]
+source = "liby"
+revision = "2b0c9e3a326dbebb86608a1e971a46890c36652e"
+change = "Adapt the statusline to account-specific usage limits"
+reason = "Upstream replaces fixed five-hour and weekly API fields with limits[]. This host's current endpoint shape and applicable meters were not verified, so only the independent unknown-context correction was selected."
+revisit_when = "When verifying the usage endpoint through its authorized client, confirm the response contract and test missing session meters, scoped meters, stale observations, and invalid responses before changing the parser."
+
+[[pending]]
+source = "liby"
+revision = "e83fbad468332015911e890a008e73342885e8fb"
+change = "Evaluate Snowflake browser recovery guidance"
+reason = "Upstream distinguishes an emitted SSO URL from completion of the browser opener and retains the original query while waiting. This host's failure path was not reproduced."
+revisit_when = "When a native SSO launch fails, inspect the installed opener's result and original query lifecycle before adapting the recovery instructions."

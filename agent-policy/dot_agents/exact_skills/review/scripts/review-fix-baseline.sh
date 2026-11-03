@@ -8,8 +8,8 @@ set -euo pipefail
 # shellcheck source=_lib.sh
 source "$(dirname "$0")/_lib.sh"
 
-if [ "$#" -ne 1 ]; then
-  echo "${0##*/}: usage: ${0##*/} <nul-delimited-fix-scope-file>" >&2
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  echo "${0##*/}: usage: ${0##*/} <fix-scope-file> [classified-ordinary-file]" >&2
   exit 2
 fi
 
@@ -25,17 +25,18 @@ if [ ! -s "$FIX_SCOPE_FILE" ]; then
   exit 2
 fi
 
-# set -e propagates the validator's real exit status: 4 raw secret, 5 ambiguous.
-validate_path_file_nul "$FIX_SCOPE_FILE"
+# Classifications from the review must also reach the snapshot's path check.
+validate_path_file_nul "$FIX_SCOPE_FILE" "${2:-}"
+REVIEW_ROOT=$(git rev-parse --show-toplevel)
 
 TMP_INDEX=$(mktemp)
 cleanup() { rm -f "$TMP_INDEX"; }
 trap cleanup EXIT
 
-GIT_INDEX_FILE="$TMP_INDEX" git read-tree HEAD
-GIT_INDEX_FILE="$TMP_INDEX" git --literal-pathspecs add \
-  --pathspec-from-file="$FIX_SCOPE_FILE" \
-  --pathspec-file-nul
-BASELINE_TREE=$(GIT_INDEX_FILE="$TMP_INDEX" git write-tree)
-BASELINE=$(git commit-tree "$BASELINE_TREE" -p HEAD -m "review-fix-baseline")
+GIT_INDEX_FILE="$TMP_INDEX" git -C "$REVIEW_ROOT" read-tree HEAD
+GIT_INDEX_FILE="$TMP_INDEX" git -C "$REVIEW_ROOT" --literal-pathspecs add \
+  --pathspec-from-file=- \
+  --pathspec-file-nul < "$FIX_SCOPE_FILE"
+BASELINE_TREE=$(GIT_INDEX_FILE="$TMP_INDEX" git -C "$REVIEW_ROOT" write-tree)
+BASELINE=$(git -C "$REVIEW_ROOT" commit-tree "$BASELINE_TREE" -p HEAD -m "review-fix-baseline")
 printf '%s\n' "$BASELINE"

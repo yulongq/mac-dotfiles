@@ -265,13 +265,14 @@ printf 'statusline output speed: passed\n'
 line1() { # window settings_json [env...]; prints line 1
   local window=$1 settings=$2; shift 2
   printf '%s' "$settings" > "$home/.claude/settings.json"
-  printf '{"cwd":"%s","model":{"id":"us.anthropic.claude-opus-5-5-20260101-v1:0","display_name":"M"},"context_window":{"context_window_size":%s,"current_usage":{"input_tokens":1000,"output_tokens":2000,"cache_creation_input_tokens":30000,"cache_read_input_tokens":120000}}}' \
-    "$fixture" "$window" |
+  printf '{"cwd":"%s","model":{"id":"us.anthropic.claude-opus-5-5-20260101-v1:0","display_name":"M"},"context_window":{"context_window_size":%s,"current_usage":%s}}' \
+    "$fixture" "$window" "$context_usage" |
     env -u CLAUDE_CODE_OAUTH_TOKEN -u DISABLE_COMPACT -u DISABLE_AUTO_COMPACT \
       -u CLAUDE_CODE_AUTO_COMPACT_WINDOW -u CLAUDE_CODE_MAX_OUTPUT_TOKENS \
       HOME="$home" XDG_CACHE_HOME="$home/.cache" PATH="$stubs:/usr/bin:$PATH" "$@" /bin/bash "$SOURCE" |
     sed $'s/\033\\[[0-9;]*m//g' | head -1
 }
+context_usage='{"input_tokens":1000,"output_tokens":2000,"cache_creation_input_tokens":30000,"cache_read_input_tokens":120000}'
 mkdir -p "$home/.claude"
 top_400k='{"autoCompactWindow":400000}'
 opus_200k='{"autoCompactWindow":400000,"modelSettings":{"claude-opus-5-5":{"autoCompactWindow":200000}}}'
@@ -290,6 +291,8 @@ expect 'auto-compact off in settings uses the bare window' "$(line1 200000 "$off
 expect 'auto-compact off in env uses the bare window' "$(line1 200000 "$top_150k" 'DISABLE_AUTO_COMPACT= TRUE ')" '^Context 85% '
 expect 'small output budget shrinks the reserve' "$(line1 1000000 "$opus_200k" CLAUDE_CODE_MAX_OUTPUT_TOKENS=1000)" '^Context 82% '
 expect 'no effort segment without effort.level' "$(line1 1000000 '{}')" '∙ M$'
+expect 'unreported context usage is unknown' "$(context_usage=null line1 1000000 '{}')" '^Context -- '
+expect 'reported zero context usage is 0%' "$(context_usage='{"input_tokens":0,"output_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}' line1 1000000 '{}')" '^Context 0% '
 
 # settings.json can carry credentials in its env block; they stay out of argv
 cat > "$stubs/jq" <<EOF

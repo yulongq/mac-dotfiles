@@ -20,11 +20,15 @@ During the split-source hook repair, mock checks passed while a real Git layout 
 
 The live home was missing `~/Brewfile` and the managed `new-branch` skill despite passing temporary-home tests. `bb` consequently failed, and the source did not preserve the intended Homebrew directory mode. These are deployment gaps that synthetic rendering alone cannot detect.
 
+**Declare private permissions on modifiers that preserve account state.** Preserving undeclared JSON keys does not preserve the destination's permissions: chezmoi also derives mode from source attributes. The Claude Code account-state modifier lacked `private_` and changed a synthetic `0600` target to `0644`; the live target's metadata also showed `0644`. The [modifier tests](tests/test_agent_config.py) cover new and existing targets, retained account and MCP state, and byte preservation when only permissions need repair.
+
 **Exercise both login and interactive shell entry points.** A non-interactive login shell skips `.zshrc`, so initialization held only there does not select the managed toolchains. The isolated shell check resolved Homebrew Node and system Java before the shared login setup; it also exposed duplicate PATH entries because string assignment bypassed Zsh's unique array handling. The shell contract now covers both entry points and preservation of existing login-profile initialization.
 
 **Declare the implementation a helper needs and run that helper through the installed shell.** A command name's presence does not establish support for its flags. `ct` needed Universal Ctags while the shell found BSD ctags. Its repair required the package declaration, actual installation, fresh-shell resolution, and generation of project and Bundler dependency tags.
 
 **Select connected clients when setup targets a running application.** Rex's client list retains disconnected app records after an update. Counting every local app rejected this host's single connected instance. The setup check covers a connected app alongside stale and remote records, and verifies that ambiguity, checksum failure, or rejected theme import stops before preference writes.
+
+**Check both an asynchronous launch and the operation it starts.** Rex's Lua calls return `nil, error`, and a successfully launched close command can still exit unsuccessfully. The close action discarded both outcomes. The [close-action checks](tests/test_rex_close.py) exercise Lua failures and real subprocess launch and exit outcomes behind a stubbed dialog, preserving the selected pane identity and a finite CLI request deadline. Real dialog and focus behavior still require the deployment check.
 
 ## Local gateways and proxy bypass
 
@@ -43,6 +47,8 @@ The install helper accepted `$HOME/` and paths that resolved outside HOME, delet
 **Put regression checks in the command that maintainers actually run.** [scripts/validate](scripts/validate) is the shared entry point for configuration, hook, statusline, and skill checks. Adding a test file requires connecting it to that gate and accounting for its dependencies; running a subset does not establish that the gate passed.
 
 The Claude Code shell suites were outside the standard runner, and Codex tests depended on undeclared, unavailable Bun. The repair integrated the shell suites and Codex contracts into the existing Python runner and connected the complete command to the local pre-push hook. That gate still does not prove host activation.
+
+**Recheck CLI behavior before advancing a skill's release metadata.** The glab skill still described a raw request body without Content-Type and treated a configured default host as a forced route. The installed CLI supplied JSON Content-Type and used a configured host as a remote preference; isolated requests also exposed the `gitlab.com` default-value exception. The skill correction followed those request and routing observations rather than changing its version record alone.
 
 **Distinguish a clean scan from a scan that did not run.** The output scanner's previous missing-`jq` path exited successfully; its regular expressions also missed a standalone GitLab token and a URL password containing a colon. The hook now uses Gitleaks with local rules, and its tests exercise successful and failed tool output, retained generic formats, placeholders, and missing dependencies without printing synthetic credential values.
 
@@ -65,3 +71,7 @@ The follow-up recovered the selected Pi footer and Herdr sidebar adoption, but c
 **Choose exact non-secret targets before live drift checks, and leave unread scope unverified.** A directory can contain protected inputs even when only a managed child concerns the task. A guard denial provides no evidence of cleanliness; an unread file provides no evidence about its contents.
 
 The review established that the shell sourced `~/.env`, not that it contained credentials. During the follow-up, a check including all of `~/.config` was blocked: the selected targets were checked, while whole-home drift remained unverified. Neither gap justifies reading protected inputs or retrying a blocked action through another path.
+
+**Keep an unknown measurement distinct from a measured zero.** Claude Code supplies null context usage before its first response and after compaction. Defaulting each missing token count to zero made the statusline report `0%` in both states. The [statusline checks](agent-policy/dot_claude/scripts/statusline.test.sh) distinguish unknown, measured zero, and nonzero usage while retaining the existing percentage calculation.
+
+**Use filenames as classification hints, not proof of secret contents.** The review helper rejected a synthetic presentation path solely because it ended in `.key`, contradicting the purpose-based Protected Inputs contract. Ordinary classifications require non-value host, project, or user evidence; they do not override declared environment inputs, known credential stores, private keys, or ciphertext. The classifier and fix-baseline checks exercise the same classification boundary.

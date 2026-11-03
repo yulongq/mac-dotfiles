@@ -7,6 +7,7 @@ require "pathname"
 require "set"
 require "shellwords"
 require "timeout"
+require "tmpdir"
 require "yaml"
 
 options = { smoke: false }
@@ -218,7 +219,7 @@ if options[:smoke]
   # shopt), so exercise it in both shells.
   lib = root.join("review/scripts/_lib.sh")
   if lib.exist?
-    # exit codes: 0 allow, 4 raw secret, 5 ambiguous
+    # exit codes: 0 ordinary or ciphertext candidate, 4 protected, 5 ambiguous
     smoke_cases = {
       ".ENV.local" => 4,
       "apps/web/.env" => 4,
@@ -226,9 +227,9 @@ if options[:smoke]
       ".env.development.local" => 5,
       "apps/web/.env.local.example" => 0,
       "deploy/.env.d/.env.local" => 4,
-      ".env/certs/server.key" => 4,
-      ".env/.bash_history" => 4,
-      ".env/id_ed25519" => 4,
+      ".env/certs/server.key" => 5,
+      ".env/.bash_history" => 5,
+      ".env/id_ed25519" => 5,
       ".env.d/cache/config.local" => 5,
       "apps/web/.env.example" => 0,
       ".env.production.sample" => 0,
@@ -237,16 +238,16 @@ if options[:smoke]
       ".envrc" => 5,
       ".env/pyvenv.cfg" => 5,
       "apps/web/.env/production.example" => 5,
-      ".secrets/.env.local.example" => 4,
-      ".secrets/.env.production" => 4,
-      ".secrets/.env.example" => 4,
+      ".secrets/.env.local.example" => 5,
+      ".secrets/.env.production" => 5,
+      ".secrets/.env.example" => 5,
       "server.log" => 0,
       "logs/app.txt" => 0,
-      ".zsh_history" => 4,
-      ".local/share/fish/fish_history" => 4,
-      "certs/server.key" => 4,
-      ".secrets/plain.toml" => 4,
-      ".secrets/deploy.pub" => 4,
+      ".zsh_history" => 5,
+      ".local/share/fish/fish_history" => 5,
+      "certs/server.key" => 5,
+      ".secrets/plain.toml" => 5,
+      ".secrets/deploy.pub" => 5,
       "identity.pem" => 5,
       ".secrets/seed.asc" => 0,
       "encrypted_private_dot_env.asc" => 0,
@@ -254,7 +255,7 @@ if options[:smoke]
       "certificate.crt" => 0,
       ".ssh/config" => 0,
       ".ssh/id_ed25519.pub" => 0,
-      ".ssh/.bash_history" => 4,
+      ".ssh/.bash_history" => 5,
       ".ssh/agent.sock" => 5,
       "src/app.ts" => 0
     }
@@ -275,6 +276,117 @@ if options[:smoke]
         if err.include?("ciphertext candidate") != ciphertext_cases.include?(entry)
           errors << "#{rel(lib.to_s, repo)}: #{shell} smoke #{entry.inspect} ciphertext notice #{ciphertext_cases.include?(entry) ? 'missing' : 'unexpected'}"
         end
+      end
+
+      Dir.mktmpdir("review-paths-") do |fixture|
+        paths = File.join(fixture, "paths")
+        ordinary = File.join(fixture, "ordinary")
+        [
+          ["slides/Roadmap.key\0", "slides/Roadmap.key\0", 0],
+          ["slides/Roadmap.key\0", "slides/roadmap.key\0", 5],
+          ["src/.secrets/schema.ts\0", "src/.secrets/schema.ts\0", 0],
+          [".env\0", ".env\0", 4],
+          [".env.age\0", ".env.age\0", 0],
+          [".ENV\n\0", ".ENV\n\0", 0],
+          ["slides/Roadmap.key", "slides/Roadmap.key", 0],
+          [".env", "", 4],
+        ].each do |entries, classifications, expected|
+          File.binwrite(paths, entries)
+          File.binwrite(ordinary, classifications)
+          _out, err, status = Open3.capture3(shell, "-c",
+            'source "$1" && validate_path_file_nul "$2" "$3"',
+            "review-paths", lib.to_s, paths, ordinary)
+          if status.exitstatus != expected
+            errors << "#{rel(lib.to_s, repo)}: #{shell} classified #{entries.inspect} exited #{status.exitstatus}, expected #{expected}"
+          end
+          if entries == ".env.age\0" && !err.include?("ciphertext candidate")
+            errors << "#{rel(lib.to_s, repo)}: #{shell} ordinary list suppressed ciphertext classification"
+          end
+          if expected == 5 && !err.include?("Roadmap.key")
+            errors << "#{rel(lib.to_s, repo)}: #{shell} ambiguity lost original path spelling"
+          end
+        end
+
+        [[File.join(fixture, "missing"), ""], [fixture, ""], [paths, File.join(fixture, "missing")]].each do |input, evidence|
+          _out, _err, status = Open3.capture3(shell, "-c",
+            'source "$1" && validate_path_file_nul "$2" "$3"',
+            "review-paths", lib.to_s, input, evidence)
+          errors << "#{rel(lib.to_s, repo)}: #{shell} accepted an invalid classification input" unless status.exitstatus == 2
+        end
+      end
+    end
+
+    Dir.mktmpdir("review-baseline-") do |fixture|
+      checkout = File.join(fixture, "repo")
+      Dir.mkdir(checkout)
+      environment = {
+        "HOME" => fixture, "TMPDIR" => fixture,
+        "PATH" => "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "GIT_CONFIG_NOSYSTEM" => "1", "GIT_CONFIG_GLOBAL" => File::NULL,
+        "GIT_AUTHOR_NAME" => "Fixture", "GIT_AUTHOR_EMAIL" => "fixture@example.invalid",
+        "GIT_COMMITTER_NAME" => "Fixture", "GIT_COMMITTER_EMAIL" => "fixture@example.invalid"
+      }
+      git = lambda do |*args|
+        out, err, status = Open3.capture3(environment, "git", "-C", checkout, *args, unsetenv_others: true)
+        raise "review baseline fixture: #{err}" unless status.success?
+        out.strip
+      end
+      git.call("init", "--quiet")
+      subdirectory = File.join(checkout, "slides")
+      Dir.mkdir(subdirectory)
+      tracked = File.join(subdirectory, "Roadmap.key")
+      unrelated = File.join(checkout, "other.txt")
+      File.write(tracked, "original\n")
+      File.write(unrelated, "original\n")
+      git.call("add", "--", "slides/Roadmap.key", "other.txt")
+      message = File.join(fixture, "message")
+      File.write(message, "Fixture baseline\n")
+      head = git.call("commit-tree", git.call("write-tree"), "-F", message)
+      git.call("update-ref", "HEAD", head)
+      File.write(tracked, "changed\n")
+      File.write(File.join(checkout, "notes.history"), "new ordinary data\n")
+      File.write(unrelated, "staged\n")
+      git.call("add", "--", "other.txt")
+      File.write(unrelated, "unstaged\n")
+      index = File.binread(File.join(checkout, ".git/index"))
+      scope = File.join(fixture, "paths")
+      ordinary = File.join(fixture, "ordinary")
+      File.binwrite(scope, "slides/Roadmap.key\0notes.history")
+      File.binwrite(ordinary, "slides/Roadmap.key\0notes.history")
+
+      %w[bash zsh].each do |shell|
+        ["", "../../ordinary"].each do |classifications|
+          _out, err, status = Open3.capture3(environment, shell, "-c",
+            'source "$1" && validate_working_tree_paths "$2"', "review-paths", lib.to_s, classifications,
+            chdir: subdirectory, unsetenv_others: true)
+          expected = classifications.empty? ? 5 : 0
+          if status.exitstatus != expected
+            errors << "#{rel(lib.to_s, repo)}: #{shell} subdirectory classification exited #{status.exitstatus}, expected #{expected}: #{err}"
+          end
+        end
+      end
+
+      baseline_script = root.join("review/scripts/review-fix-baseline.sh").to_s
+      baseline, err, status = Open3.capture3(environment, "bash", baseline_script, "../../paths", "../../ordinary",
+        chdir: subdirectory, unsetenv_others: true)
+      if status.success?
+        baseline = baseline.strip
+        unless git.call("show", "#{baseline}:slides/Roadmap.key") == "changed" &&
+               git.call("show", "#{baseline}:notes.history") == "new ordinary data" &&
+               git.call("show", "#{baseline}:other.txt") == "original"
+          errors << "#{rel(baseline_script, repo)}: baseline did not preserve only its ordinary scope"
+        end
+        %w[bash zsh].each do |shell|
+          _out, branch_err, branch_status = Open3.capture3(environment, shell, "-c",
+            'source "$1" && validate_git_diff_paths "$2" "$3" "$4"',
+            "review-paths", lib.to_s, head, baseline, "../../ordinary", chdir: subdirectory, unsetenv_others: true)
+          errors << "#{rel(lib.to_s, repo)}: #{shell} branch classification failed: #{branch_err}" unless branch_status.success?
+        end
+      else
+        errors << "#{rel(baseline_script, repo)}: relative scope or classification file failed: #{err}"
+      end
+      unless File.binread(File.join(checkout, ".git/index")) == index && File.read(tracked) == "changed\n" && File.read(unrelated) == "unstaged\n"
+        errors << "#{rel(baseline_script, repo)}: baseline changed the real index or working tree"
       end
     end
   end

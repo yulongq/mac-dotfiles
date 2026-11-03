@@ -1,4 +1,4 @@
-{{- /* Read modify_dot_claude.json before editing this template; the modifier controls how these values are merged into the live file. */ -}}
+{{- /* Read modify_private_dot_claude.json before editing this template; the modifier controls how these values are merged into the live file. */ -}}
 {
   "externalEditorContext": true,
   "leftArrowOpensAgents": false,
