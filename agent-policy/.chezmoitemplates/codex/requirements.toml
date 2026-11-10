@@ -11,14 +11,6 @@ hooks = true
 [hooks]
 managed_dir = "{{ .chezmoi.homeDir }}/.codex/managed-hooks"
 
-[[hooks.PreToolUse]]
-matcher = "^Bash$"
-
-[[hooks.PreToolUse.hooks]]
-type = "command"
-command = "{{ .chezmoi.homeDir }}/.codex/managed-hooks/guard-bash"
-timeout = 5
-
 [[hooks.UserPromptSubmit]]
 
 [[hooks.UserPromptSubmit.hooks]]

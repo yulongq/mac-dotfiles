@@ -175,26 +175,6 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/agent-guard --runtime claude",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Read|Edit|Write|Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/agent-guard --runtime claude",
-            "timeout": 10
-          }
-        ]
-      },
-      {
         "matcher": "Edit|Write",
         "hooks": [
           {

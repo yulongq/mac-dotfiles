@@ -55,11 +55,8 @@ section() {
 # Mirror the installer's exact command, home-dir span blanked as above, so
 # `herdr integration install claude` finds this entry instead of adding a second.
 HERDR_HOOK="bash 'BLANKED/.claude/hooks/herdr-agent-state.sh' session"
-AGENT_GUARD="/opt/homebrew/bin/agent-guard --runtime claude"
 
 section "registered end state"
-expect_registration PreToolUse "Bash" "$AGENT_GUARD"
-expect_registration PreToolUse "Read|Edit|Write|Grep" "$AGENT_GUARD"
 expect_registration PreToolUse "Edit|Write" "~/.claude/hooks/pre-edit-warn-chezmoi.sh"
 expect_registration PostToolUse "Bash" "~/.claude/hooks/post-bash-scan-secrets.sh"
 expect_registration PostToolUseFailure "Bash" "~/.claude/hooks/post-bash-scan-secrets.sh"
@@ -70,20 +67,13 @@ check "event/matcher/command tuples are unique" "$(jq '
    | .hooks[] | [$event, $matcher, .command]]
   | length == (unique | length)' <<<"$HOOKS_JSON")"
 
-check "Bash has one guard" "$(jq '
-  [.PreToolUse[] | select(.matcher == "Bash") | .hooks[]] | length == 1' <<<"$HOOKS_JSON")"
-check "each agent guard retains a finite deadline and the default failure policy" "$(jq --arg c "$AGENT_GUARD" '
-  [.PreToolUse[].hooks[] | select(.command == $c)]
-  | all(.timeout | type == "number" and . > 0) and all(has("onFailure") | not)' <<<"$HOOKS_JSON")"
+check "PreToolUse only registers the managed-file warning" "$(jq '
+  [.PreToolUse[].hooks[]] | length == 1' <<<"$HOOKS_JSON")"
 
 section "registered command -> source script"
 while IFS= read -r cmd; do
   # herdr owns the hook script it registers, so no executable_ source deploys it.
   [ "$cmd" = "$HERDR_HOOK" ] && continue
-  if [ "$cmd" = "$AGENT_GUARD" ]; then
-    # Homebrew owns this executable outside the chezmoi source tree.
-    continue
-  fi
   base="${cmd##*/}"
   # Only an executable_ source deploys as an executable hook; a plain source
   # deploys 0644 and a *.test.* name is chezmoi-ignored, so both would register

@@ -76,26 +76,17 @@ class AgentHookTests(unittest.TestCase):
         hooks = requirements["hooks"]
         managed_dir = "{{ .chezmoi.homeDir }}/.codex/managed-hooks"
         self.assertEqual(hooks["managed_dir"], managed_dir)
-        for event, matcher, script in (
-            ("PreToolUse", {"matcher": "^Bash$"}, "guard-bash"),
-            ("UserPromptSubmit", {}, "contextual-markdown-links"),
-        ):
-            with self.subTest(event=event):
-                entries = hooks[event]
-                self.assertEqual(len(entries), 1)
-                entry = dict(entries[0])
-                commands = entry.pop("hooks")
-                self.assertEqual(entry, matcher)
-                self.assertEqual(len(commands), 1)
-                command = dict(commands[0])
-                self.assertGreater(command.pop("timeout"), 0)
-                self.assertEqual(command, {"type": "command", "command": f"{managed_dir}/{script}"})
-        for event, entries in hooks.items():
-            if event == "managed_dir":
-                continue
-            for entry in entries:
-                for command in entry["hooks"]:
-                    self.assertTrue(command["command"].startswith(managed_dir + "/"))
+        self.assertEqual(set(hooks), {"managed_dir", "UserPromptSubmit"})
+        entries = hooks["UserPromptSubmit"]
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(set(entries[0]), {"hooks"})
+        commands = entries[0]["hooks"]
+        self.assertEqual(len(commands), 1)
+        command = dict(commands[0])
+        self.assertGreater(command.pop("timeout"), 0)
+        self.assertEqual(command, {
+            "type": "command", "command": f"{managed_dir}/contextual-markdown-links",
+        })
 
     def test_codex_prompt_hook_without_urls(self):
         result = run("/bin/zsh", "-f", str(POLICY / "dot_codex/managed-hooks/executable_contextual-markdown-links"),
