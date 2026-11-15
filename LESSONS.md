@@ -66,6 +66,10 @@ The live registry contained the managed skills and an independent Git working tr
 
 The follow-up recovered the selected Pi footer and Herdr sidebar adoption, but could not establish a reconciled initial baseline. The later baseline review inspected the current `liby` and `joshukraine` trees at their pinned revisions, recorded the durable accepted and rejected layers in [ownership](docs/ownership.md#upstream-baseline), set `reviewed_through` to those revisions, and left unresolved candidates in `pending`; history before those revisions remains out of scope.
 
+## External process boundaries
+
+**Pass the pane's server when a Rex action launches a separate CLI.** Rex routes an action's own calls through `ctx.server`, but a detached helper's CLI does not inherit that routing. The close confirmation passed only the session and block, so a remote pane's confirmation targeted the local server. The [close regression checks](tests/test_rex_close.py) failed at both helper and CLI boundaries before the fix and now verify the server alongside the target IDs and request deadline.
+
 ## Evidence boundaries
 
 **Choose exact non-secret targets before live drift checks, and leave unread scope unverified.** A directory can contain protected inputs even when only a managed child concerns the task. A guard denial provides no evidence of cleanliness; an unread file provides no evidence about its contents.

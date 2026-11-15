@@ -85,12 +85,14 @@ assert(started.opts.detach == true)
 
     def test_running_program_and_repeated_request_keep_one_confirmation(self):
         self.lua('''
+ctx.server = "fixture-server"
 info = {foreground = {name = "sh", argv0 = "sh"}}
 action.run(ctx)
 assert(not closed and started.args[6]:find("sh is still running", 1, true))
 action.run(ctx)
 assert(killed, "previous confirmation was not cancelled")
 assert(started.args[8] == ctx.session_id and started.args[9] == ctx.block_id)
+assert(started.args[10] == ctx.server, "confirmation lost the pane's server")
 ''')
 
     def javascript(self, scenario):
@@ -141,7 +143,7 @@ ui.NSApplicationActivationPolicyAccessory = 1;
 for (const name of ["NSURL", "NSPipe", "NSString", "NSUTF8StringEncoding", "NSTask"]) ui[name] = native[name];
 function invoke($) {
 ''' + body + '''
-run(["Fixture is still running.", argv[1], "fixture-session", "fixture-block"]);
+run(["Fixture is still running.", argv[1], "fixture-session", "fixture-block", scenario.server || ""]);
 }
 invoke(ui);
 return JSON.stringify(result);
@@ -156,11 +158,16 @@ return JSON.stringify(result);
         return actual
 
     def test_confirmed_close_has_request_deadline_and_exact_target(self):
-        actual = self.javascript({})
-        self.assertEqual(actual["args"], ["--autostart=false", "--timeout=5s", "block", "close",
-                                         "-s", "fixture-session", "fixture-block"])
-        self.assertEqual(len(actual["alerts"]), 1)
-        self.assertTrue(actual["activated"])
+        for server in (None, "fixture-server"):
+            with self.subTest(server=server):
+                actual = self.javascript({"server": server})
+                expected = ["--autostart=false", "--timeout=5s"]
+                if server:
+                    expected += ["-S", server]
+                expected += ["block", "close", "-s", "fixture-session", "fixture-block"]
+                self.assertEqual(actual["args"], expected)
+                self.assertEqual(len(actual["alerts"]), 1)
+                self.assertTrue(actual["activated"])
 
     def test_failed_close_reports_launch_stderr_or_exit_status(self):
         for scenario, message in (({"launch": False}, "could not be started"),

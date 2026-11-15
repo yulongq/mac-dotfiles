@@ -9,14 +9,14 @@ ref = "refs/heads/main"
 # Its tree differs from 80a14261442bdb07d1574724ac50fb3e2be2e601 only in
 # compaction-reminder.md, agents/tools.md, and CONCEPTS.md; those differences
 # and the following 52 commits were reviewed. Ciphertext and brew.env stayed opaque.
-observed_revision = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
-reviewed_through = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
+observed_revision = "422131c9210c731193acd98c1264f031cbaa9444"
+reviewed_through = "422131c9210c731193acd98c1264f031cbaa9444"
 
 [sources.joshukraine]
 url = "https://github.com/joshukraine/dotfiles.git"
 ref = "refs/heads/master"
-observed_revision = "6f042b0eefe8b3cc0e5d84cacac982f6f7bd1169"
-reviewed_through = "6f042b0eefe8b3cc0e5d84cacac982f6f7bd1169"
+observed_revision = "291ad942c32ea8b5ed445d769a2e55b643f09cd2"
+reviewed_through = "291ad942c32ea8b5ed445d769a2e55b643f09cd2"
 
 [[pending]]
 source = "liby"
@@ -34,10 +34,10 @@ revisit_when = "When adopting the Git helper changes, validate main and master, 
 
 [[pending]]
 source = "joshukraine"
-revision = "cf24722e28efbc294eee806fdbab76f255449e75"
-change = "Assess the upstream Ruby major-version upgrade"
-reason = "The upstream declares Ruby 4.0.7 while this source selects 3.4.4. Configuration rendering does not establish compatibility with local projects and editor gems."
-revisit_when = "When upgrading Ruby, inventory the actual project and editor consumers, run their checks, and preserve asdf as the runtime owner."
+revision = "393b96c0978089bfeb99821c8ce3783228e7ea8f"
+change = "Assess the upstream Ruby and Node major-version upgrades"
+reason = "The upstream declares Ruby 4.0.9 and Node 26.13.0 while this source selects 3.4.4 and 24.21.0. Configuration rendering does not establish compatibility with local projects, Ruby editor gems, or Codex ACP."
+revisit_when = "When selecting either runtime upgrade, inventory its actual project and editor consumers, run their checks, and preserve the asdf runtime and Codex ACP installation owners."
 
 [[pending]]
 source = "liby"
@@ -76,24 +76,24 @@ revisit_when = "When stacked pull requests are needed, evaluate the workflow aga
 
 [[pending]]
 source = "liby"
-revision = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
+revision = "422131c9210c731193acd98c1264f031cbaa9444"
 change = "Evaluate broader Agent instruction and validation changes"
-reason = "The review and write-skill rewrites, broader repair scope, folder trust, and host execution rules change semantics beyond the selected classifier and CLI corrections. Upstream authorization does not apply to this host."
+reason = "The broader review, evaluation, compaction, repair-scope, and host execution changes remain unselected, including folder trust and user-specific conventions. Upstream authorization does not apply to this host."
 revisit_when = "When revising those workflows for a demonstrated local failure, compare the selected semantics with this host's authority contract and complete the required write-skill evaluation."
 
 [[pending]]
 source = "joshukraine"
-revision = "6f042b0eefe8b3cc0e5d84cacac982f6f7bd1169"
+revision = "ff447baa7590b070beb791873c629544b5e1e0a0"
 change = "Assess the updated Neovim plugin pins"
-reason = "The prior lockfile changes and six further plugin pin updates require editor and plugin-build checks. The local plugin set also retains Avante and Copilot integrations absent upstream; the lockfile cannot be replaced wholesale."
+reason = "Previously deferred lockfile changes and two further batches affecting 14 plugin pins require editor and plugin-build checks. The local plugin set also retains Avante and Copilot integrations absent upstream; the lockfile cannot be replaced wholesale."
 revisit_when = "When updating editor plugins, review the pinned release deltas and verify startup, build steps, language servers, and the selected AI integrations."
 
 [[pending]]
 source = "liby"
-revision = "5409c246fdde6ed3a9a555fa0962e32296be13f4"
+revision = "422131c9210c731193acd98c1264f031cbaa9444"
 change = "Activate the adopted configuration and skill corrections"
-reason = "The private Claude account-state modifier, unknown context display, Rex close error handling, review classifier, and glab skill are source changes. Live targets and the shared skill registry have not been updated by this adoption."
-revisit_when = "On authorized deployment, reconcile each selected target, verify the account-state mode and byte preservation, exercise statusline states and Rex alert/focus behavior, rebuild the registry, and check fresh-runtime loading."
+reason = "The private Claude account-state modifier, unknown context display, Rex close error handling and remote routing, review classifier, glab skill, and set-goal recovery are source changes. Live targets and the shared skill registry have not been updated by these adoptions."
+revisit_when = "On authorized deployment, reconcile each selected target, verify the account-state mode and byte preservation, exercise statusline states and Rex alert/focus and remote-close behavior, rebuild the registry, and check fresh-runtime loading and goal-conflict recovery."
 
 [[pending]]
 source = "liby"
@@ -129,3 +129,52 @@ revision = "e83fbad468332015911e890a008e73342885e8fb"
 change = "Evaluate Snowflake browser recovery guidance"
 reason = "Upstream distinguishes an emitted SSO URL from completion of the browser opener and retains the original query while waiting. This host's failure path was not reproduced."
 revisit_when = "When a native SSO launch fails, inspect the installed opener's result and original query lifecycle before adapting the recovery instructions."
+
+[[pending]]
+source = "liby"
+revision = "da12183f517715138afff226b3170891f52e0e77"
+change = "Adapt the Rex close confirmation's alert lifecycle"
+reason = "Only the independent remote-server routing fix was selected. Loss-of-focus cancellation, event-loop dismissal, and alert placement change GUI behavior that has not been verified on this host."
+revisit_when = "When selecting the alert changes, use task-owned panes to verify Close, Cancel, Escape, focus loss, timeout, repeated requests, failure alerts, and focus preservation on the installed app."
+
+[[pending]]
+source = "liby"
+revision = "aaf58d46974be840ec49480eef0452816f2a07a4"
+change = "Migrate the Rex pane header preference"
+reason = "Source still selects Workspace.showsPaneHeaders. The installed app's use of Workspace.paneHeaderVisibility and precedence over the old boolean were not checked."
+revisit_when = "When the installed app supports the new preference, preserve Always show, verify the rendered pane headers, and reconcile the selected old destination field."
+
+[[pending]]
+source = "liby"
+revision = "76c5efbe9cde56df76f2e38b1bba0d5f48edf7e4"
+change = "Stop restoring migrated Codex Desktop state"
+reason = "Source retains Desktop atoms removed upstream after account-state migration. The current consumer's migration behavior was not verified, and source removal alone does not retire fields preserved by the modifier."
+revisit_when = "When Desktop startup demonstrably migrates the selected fields, verify the account-owned replacements, stop managing those source fields, and check exact destination cleanup without changing other account state."
+
+[[pending]]
+source = "liby"
+revision = "4e400fed0ab97a9dd56ac70aed8d125675f81804"
+change = "Evaluate tool-provided skill ownership"
+reason = "Upstream delegates unchanged skills to installed tools and replaces orc with Rexume's guide. This registry remains an exact source-reconstructible output with local routing, envchain, authorization, and recovery rules."
+revisit_when = "When selecting a packaged skill, establish its installation owner, preserve the applicable local contracts, reconstruct it from source without unmanaged siblings, and verify version coupling and loading in the affected runtimes."
+
+[[pending]]
+source = "liby"
+revision = "07505aea8f43add88a8d2aa897972636430eedf8"
+change = "Evaluate Claude settings for sessions that skip user settings"
+reason = "Upstream moves privacy and URL-handler settings into a system managed file. This host has no verified matching failure, and that file changes precedence and plugin behavior beyond the selected source corrections."
+revisit_when = "When a settings-isolated session demonstrates the gap, verify both retained provider routes, effective settings sources, plugin and hook behavior, and the authorized managed-file scope before deployment."
+
+[[pending]]
+source = "liby"
+revision = "409fec67e079516324fe4e74dd4a6bfb608f628c"
+change = "Evaluate Homebrew Bash for Claude Code and Pi commands"
+reason = "The shell switch addresses upstream Zsh command failures but also changes startup and inherited PATH behavior. No equivalent local failure or consumer compatibility was established."
+revisit_when = "When a local task reproduces the shell mismatch, verify the selected Bash installation, fresh Agent child commands, PATH precedence, shell snapshots, and existing private-input handling before selecting the switch."
+
+[[pending]]
+source = "liby"
+revision = "422131c9210c731193acd98c1264f031cbaa9444"
+change = "Narrow the Claude .env.local read deny"
+reason = "The current .env.local* pattern also matches ordinary templates such as .env.local.example. Narrowing it changes the permission system and was not separately authorized."
+revisit_when = "On explicit authorization for this rule, verify with isolated synthetic inputs that exact environment files remain denied and ordinary templates are readable without weakening other protected-input rules."
