@@ -30,6 +30,12 @@ The live home was missing `~/Brewfile` and the managed `new-branch` skill despit
 
 **Check both an asynchronous launch and the operation it starts.** Rex's Lua calls return `nil, error`, and a successfully launched close command can still exit unsuccessfully. The close action discarded both outcomes. The [close-action checks](tests/test_rex_close.py) exercise Lua failures and real subprocess launch and exit outcomes behind a stubbed dialog, preserving the selected pane identity and a finite CLI request deadline. Real dialog and focus behavior still require the deployment check.
 
+## Inherited permission rules
+
+**Check effective permission rules before grouping deployment targets, and trace inherited rules before treating them as host decisions.** Claude Code matches Bash deny patterns against the whole command text, so naming a target can block a read-only preview. Check the live rule and its managed source when a call is denied; continue independent authorized targets while leaving the blocked target pending. Permission changes require separate authorization under the [Agent host requirements](agent-policy/README.md).
+
+The initial import in `367426a` inherited `Bash(*.zprofile*)` and `Edit(~/.zprofile*)` from the `liby` baseline; both remain in the [managed settings fragment](agent-policy/.chezmoitemplates/claude/settings.json). A home deployment combined the login-profile preview with four other targets, so the Bash deny blocked the whole command. The follow-up also stopped the independent targets. Tracing the import and the recorded migration approval established inherited policy and preservation of existing permissions, not a separate host decision to prohibit that file.
+
 ## Local gateways and proxy bypass
 
 **Export loopback exclusions in both `NO_PROXY` and `no_proxy` alongside shell proxy settings.** Clients can honor different variable spellings, and Surge's Global Proxy mode skips the LAN direct rules that protect local gateways in Rule mode. The shared shell contract checks both variables through login and interactive entry points.
