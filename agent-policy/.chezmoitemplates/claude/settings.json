@@ -69,7 +69,6 @@
     "deny": [
       "Bash(*.claude/.credentials.json*)",
       "Bash(*.npmrc*)",
-      "Bash(*.zprofile*)",
       "Bash(*.zsh_history*)",
       "Bash(*auth.json*)",
       "Bash(*gh auth token*)",
@@ -78,7 +77,6 @@
       "Edit(~/.claude/.credentials.json*)",
       "Edit(~/.gnupg/private-keys-v1.d/**)",
       "Edit(~/.npmrc*)",
-      "Edit(~/.zprofile*)",
       "Edit(~/*/auth.json*)",
       "EnterPlanMode",
       "ExitPlanMode",
