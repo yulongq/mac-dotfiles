@@ -8,7 +8,7 @@ Configure an Apple Silicon Mac using the installation owners in [ownership.md](o
 2. Review `packages/Brewfile`, then run `brew bundle --no-upgrade --file packages/Brewfile` from the checkout root. The declaration selects required packages; it is not a cleanup list for the whole machine.
 3. Install the asdf plugins and versions needed by the selected projects. Set up the JVM, Maven, and Go distributions at the paths selected by `home/dot_pathrc`, verifying vendor checksums. Retain rustup ownership of Rust toolchains.
 4. Install the CLI and editor dependencies declared in `packages/` with their owning runtimes. Keep Codex ACP in the selected asdf Node installation and regenerate its shims; do not create a competing global copy.
-5. Install vendor-managed desktop applications and Maple Mono Normal NF CN for Ghostty and kitty through their selected owners. Set up application sync or exports for VS Code, Zed, Karabiner, Raycast, input methods, and other application-owned preferences.
+5. Install vendor-managed desktop applications through their selected owners. Install `JetBrainsMapleMono-NF-XX-XX-XX.zip` from the [official JetBrains Maple Mono stable release](https://github.com/SpaceTimee/Fusion-JetBrainsMapleMono/releases/latest), verify its published SHA-256, and install its TTF files through Font Book for All Users (`/Library/Fonts`). Select the internal family `JetBrains Maple Mono` in application-owned font settings, including Herdr, VS Code, and Zed. Set up application sync or exports for VS Code, Zed, Karabiner, Raycast, input methods, and other application-owned preferences.
 
 ## Apply configuration
 
@@ -21,9 +21,9 @@ Configure an Apple Silicon Mac using the installation owners in [ownership.md](o
 
 ## Set up Rex
 
-Install and open Rex through its vendor installer, then install Maple Mono Normal NF CN through Font Book. Apply `~/.config/rex` and `~/.local/bin/setup-rex` from this checkout using the scoped lifecycle procedure. The Lua configuration binds Command-N to a session, Command-Shift-N to an app window, Command-Z to terminal undo, and Command-W to confirmation when a program is still running.
+Install and open Rex through its vendor installer, then install JetBrains Maple Mono through Font Book as described above. Apply `~/.config/rex` and `~/.local/bin/setup-rex` from this checkout using the scoped lifecycle procedure. The Lua configuration binds Command-N to a session, Command-Shift-N to an app window, Command-Z to terminal undo, and Command-W to confirmation when a program is still running.
 
-Enable Remote Control in Rex Settings under Rex Server, keep exactly one local Rex app connected, and run `setup-rex` in a fresh shell. It downloads and verifies the pinned Snazzy Soft theme, checks Lua configuration, imports the theme, writes the selected appearance and terminal preferences, and reloads Lua. It selects Maple Mono Normal NF CN at 14 pt. Reopen the Rex app when convenient to load launch-time preferences, leaving Rex Server running so its sessions survive. The command does not install Rex, rexume, or Agent integrations; shared skills remain under this repository's Agent configuration workflow.
+Enable Remote Control in Rex Settings under Rex Server, keep exactly one local Rex app connected, and run `setup-rex` in a fresh shell. It downloads and verifies the pinned Snazzy Soft theme, checks Lua configuration, imports the theme, writes the selected appearance and terminal preferences, and reloads Lua. It selects JetBrains Maple Mono at 14 pt. Reopen the Rex app when convenient to load launch-time preferences, leaving Rex Server running so its sessions survive. The command does not install Rex, rexume, or Agent integrations; shared skills remain under this repository's Agent configuration workflow.
 
 Run `rex config check` and `rex keymap` to check Lua loading and the running server's bindings. Verify font rendering, theme colors, and the close confirmation in Rex after reopening the app.
 

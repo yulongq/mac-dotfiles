@@ -45,7 +45,7 @@ defaults write $domain Workspace.terminalCopyAnimation -bool false
 defaults write $domain Workspace.terminalCursorBlinkIntervalMilliseconds -int 0
 defaults write $domain Workspace.terminalCursorBlinkUsesCustomInterval -bool false
 defaults write $domain Workspace.terminalFallbackFontNames -array "PingFang SC"
-defaults write $domain Workspace.terminalFontName -string "Maple Mono Normal NF CN"
+defaults write $domain Workspace.terminalFontName -string "JetBrains Maple Mono"
 defaults write $domain Workspace.terminalFontPointSize -float 14
 defaults write $domain Workspace.terminalImproveTextContrast -bool false
 defaults write $domain Workspace.terminalOptionKeyBehavior -string actsAsAlt
