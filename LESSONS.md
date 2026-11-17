@@ -44,6 +44,8 @@ The initial import in `367426a` inherited `Bash(*.zprofile*)` and `Edit(~/.zprof
 
 Pi's installed network module connected to Surge's HTTP listener without the exclusions and directly to Magpie with them. Sending the local gateway request through the selected remote proxy returned EOF while DeepSeek's API remained reachable through that proxy. Upstream connectivity alone therefore did not establish that the client could reach its local gateway.
 
+**Own caller identity when gateway routing depends on it.** HTTP header names are case-insensitive. OMP's model modifier preserved an existing `User-Agent` or emitted it alongside a differently cased key, so a correct model inventory did not establish the intended Magpie caller. The modifier owns that header while retaining unrelated host settings. The isolated checks exercise both fresh and existing configuration. A real tier check needs Magpie's request record.
+
 ## Destructive target paths
 
 **Resolve the effective path before a recursive delete.** A string-prefix check does not constrain a trailing separator, `..`, or a symlinked parent, and `rsync --delete` acts on the resolved location. Resolve `HOME` and the target, require the exact registry path, re-check after creating it, and test rejection with `$HOME/`, `..`, and a symlinked parent while asserting that outside content survives.
@@ -55,6 +57,8 @@ The install helper accepted `$HOME/` and paths that resolved outside HOME, delet
 **Put regression checks in the command that maintainers actually run.** [scripts/validate](scripts/validate) is the shared entry point for configuration, hook, statusline, and skill checks. Adding a test file requires connecting it to that gate and accounting for its dependencies; running a subset does not establish that the gate passed.
 
 The Claude Code shell suites were outside the standard runner, and Codex tests depended on undeclared, unavailable Bun. The repair integrated the shell suites and Codex contracts into the existing Python runner and connected the complete command to the local pre-push hook. That gate still does not prove host activation.
+
+**Validate the commit named by the push.** Git supplies the object IDs of the proposed ref updates to `pre-push`. A fixture pushing another tip while the checked-out tip passed exposed that the hook ran the wrong validator. The hook now runs the committed validator in an isolated snapshot of each distinct pushed commit. Use `scripts/validate` separately to check uncommitted work.
 
 **Recheck CLI behavior before advancing a skill's release metadata.** The glab skill still described a raw request body without Content-Type and treated a configured default host as a forced route. The installed CLI supplied JSON Content-Type and used a configured host as a remote preference; isolated requests also exposed the `gitlab.com` default-value exception. The skill correction followed those request and routing observations rather than changing its version record alone.
 

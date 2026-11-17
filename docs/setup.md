@@ -10,6 +10,8 @@ Configure an Apple Silicon Mac using the installation owners in [ownership.md](o
 4. Install the CLI and editor dependencies declared in `packages/` with their owning runtimes. Keep Codex ACP in the selected asdf Node installation and regenerate its shims; do not create a competing global copy.
 5. Install vendor-managed desktop applications through their selected owners. Install `JetBrainsMapleMono-NF-XX-XX-XX.zip` from the [official JetBrains Maple Mono stable release](https://github.com/SpaceTimee/Fusion-JetBrainsMapleMono/releases/latest), verify its published SHA-256, and install its TTF files through Font Book for All Users (`/Library/Fonts`). Select the internal family `JetBrains Maple Mono` in application-owned font settings, including Herdr, VS Code, and Zed. Set up application sync or exports for VS Code, Zed, Karabiner, Raycast, input methods, and other application-owned preferences.
 
+Before running `scripts/validate`, make sure `asdf which nvim` resolves the declared Neovim version, and that Ruby, Codex, Herdr, Oracle, and Rex are on `PATH`. Use the [installation owners](ownership.md) for Codex, [Herdr](https://github.com/herdrdev/herdr), Oracle (`packages/npm.txt`), and the Rex CLI bundled with the Rex app. The Brewfile supplies `ctx7`, `gh`, `glab`, and `sessidx`. The skill checks run local CLI contract probes; the shell checks also need network access to GitHub for the pinned archives.
+
 ## Apply configuration
 
 1. On an existing machine, identify regular files, symlinks, and unmanaged children in each selected configuration directory. Preserve uncommitted configuration changes and a recovery copy for each non-secret target being replaced. Do not copy credential stores or private environment files through repository scripts.

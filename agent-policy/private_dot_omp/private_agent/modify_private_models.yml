@@ -6,6 +6,13 @@
 {{- $out := mergeOverwrite (deepCopy $defaults) $current -}}
 {{- $magpie := index $out "providers" "magpie" -}}
 {{- $_ := set $magpie "models" (index $defaults "providers" "magpie" "models") -}}
+{{- $headers := index $magpie "headers" -}}
+{{- range $name, $_ := $headers -}}
+  {{- if eq (lower $name) "user-agent" -}}
+    {{- $_ := unset $headers $name -}}
+  {{- end -}}
+{{- end -}}
+{{- $_ := set $headers "User-Agent" (index $defaults "providers" "magpie" "headers" "User-Agent") -}}
 {{- if deepEqual $current $out -}}
   {{- $stdin -}}
 {{- else -}}

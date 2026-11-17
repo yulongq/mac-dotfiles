@@ -24,7 +24,7 @@ The environment uses Zsh with YAML-defined abbreviations and pinned plugin archi
 
 ## Validate
 
-With chezmoi 2.73.1 or newer, Python 3.11+, Ruby, and the shell dependencies installed, run:
+Install the [validation prerequisites](docs/setup.md#install-tools), then check the current checkout with:
 
 ```sh
 scripts/validate
@@ -32,7 +32,7 @@ scripts/validate
 
 Validation renders into unique temporary homes, checks repeated application for drift, parses shell/config syntax, verifies PATH selection with synthetic runtimes and abbreviation loading with the installed zsh-abbr, and exercises configuration creation, application, and retirement. The Python suite also runs the Claude Code hook/statusline scripts and the Codex hook contracts; Bun is not required. Agent modifier tests use synthetic host settings to check field preservation, replacement, initialization, and explicit retirement. Both skill registries receive structural and CLI smoke checks. The shell suite downloads the declared plugin archives into a temporary cache, so internet access to GitHub is required. Validation never starts agents, installs packages, accesses real private environment files, or switches the active chezmoi source. Runtime-selection tests establish PATH behavior; they do not substitute for Java/Node/project builds or GUI acceptance.
 
-Enable the same validation before pushes from this checkout with `git config --local core.hooksPath .githooks`. Inspect any existing local hook selection before replacing it. The hook runs `scripts/validate` and aborts the push if a check fails.
+Enable validation before pushes from this checkout with `git config --local core.hooksPath .githooks`. Inspect any existing local hook selection before replacing it. The hook runs `scripts/validate` from an isolated archive of each distinct commit targeted by the pushed refs and aborts the push if a check fails. Ref deletions and tags that do not target commits have no source snapshot to check.
 
 Historical Agent tasks and their measurement boundaries are recorded in the [workflow baseline](docs/agent-workflows.md). Its read-only collector measures existing session records without replaying actions or claiming instruction improvements.
 

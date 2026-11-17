@@ -314,6 +314,7 @@ host_authorization = "keep"
         provider = models["providers"]["magpie"]
         self.assertEqual(provider["baseUrl"], "http://127.0.0.1:3425/v1")
         self.assertEqual(provider["auth"], "none")
+        self.assertEqual(provider["headers"], {"User-Agent": "omp"})
         available = {"magpie/" + model["id"]: model for model in provider["models"]}
         astra_roles = {"slow", "plan", "advisor", "review"}
         for role, selector in config["modelRoles"].items():
@@ -347,7 +348,7 @@ tier: {openai: priority}
   magpie:
     baseUrl: http://localhost:7777/v1
     auth: oauth
-    headers: {X-Host: retained}
+    headers: {User-Agent: old-client, user-agent: host-client, X-Host: retained}
     models: [{id: retired-model}]
 """)
         actual = self.read_yaml(config)
@@ -361,7 +362,7 @@ tier: {openai: priority}
         self.assertEqual(providers["other"], {"baseUrl": "http://localhost:9000/v1", "auth": "none"})
         self.assertEqual(providers["magpie"]["baseUrl"], "http://localhost:7777/v1")
         self.assertEqual(providers["magpie"]["auth"], "oauth")
-        self.assertEqual(providers["magpie"]["headers"]["X-Host"], "retained")
+        self.assertEqual(providers["magpie"]["headers"], {"User-Agent": "omp", "X-Host": "retained"})
         self.assertEqual({model["id"] for model in providers["magpie"]["models"]},
                          {"codex/gpt-6.2-sol", "codex/gpt-6.2-astra"})
         for target in (config, models):
