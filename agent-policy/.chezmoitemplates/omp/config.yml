@@ -1,0 +1,21 @@
+modelRoles:
+  default: magpie/codex/gpt-6.1-sol:high
+  smol: magpie/codex/gpt-6.1-sol:low
+  slow: magpie/codex/gpt-6-astra:xhigh
+  plan: magpie/codex/gpt-6-astra:xhigh
+  vision: magpie/codex/gpt-6.1-sol:high
+  advisor: magpie/codex/gpt-6-astra:xhigh
+  task: magpie/codex/gpt-6.1-sol:high
+  scout: magpie/codex/gpt-6.1-sol:medium
+  review: magpie/codex/gpt-6-astra:xhigh
+  commit: magpie/codex/gpt-6.1-sol:high
+  tiny: magpie/codex/gpt-6.1-sol:low
+  memory: magpie/codex/gpt-6.1-sol:low
+task:
+  agentModelOverrides:
+    task: "@task"
+    scout: "@scout"
+    reviewer: "@review"
+    security-reviewer: "@review"
+    seance: "@task"
+    sonic: "@smol"

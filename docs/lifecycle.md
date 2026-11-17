@@ -44,13 +44,14 @@ For the full `~/.agents/skills` target, the check also reports destination-only 
 
 Establish one writer for the selected destination before applying. Coordinate other editing sessions and use the application's own setting API or a quiescent application when it writes this file itself. Re-read the target before writing; if it differs from the reviewed version, regenerate the candidate and review its actual changes. A pre-write hash check alone does not prevent a concurrent write: when writers cannot be coordinated and no atomic version precondition is available, leave deployment pending.
 
-Once the selected group's prerequisites and diff are satisfied:
+When a managed parent directory is missing or its declared permissions need reconciliation, include it as an explicit target: applying only a child file does not apply the parent's mode. Select the narrowest directory whose managed descendants stay within the requested group, and preview those descendants before applying. Create missing unmanaged parents separately; `mkdir -p` does not reconcile managed directory permissions. Once the selected group's prerequisites and diff are satisfied:
 
 ```sh
-mkdir -p "$(dirname "$target")"
 chezmoi --source "$repo" --refresh-externals=never apply --exclude=encrypted,scripts "$target"
 chezmoi --source "$repo" --refresh-externals=never status --exclude=encrypted "$target"
 ```
+
+Verify the selected directories' actual modes as well as their child files. A clean child-file status alone does not establish that the parent's permissions were applied.
 
 Restart or reload the actual consumer and check its behavior. Apply again and confirm no unexplained drift. A plugin declaration is a separate target: selecting `.zshrc` alone does not install plugin archives. Package installation remains an explicit action owned by `packages/` and the selected package manager. The shared skill registry is a separate exact target; rebuild it with `scripts/install-skills` and follow [shared skill ownership](../agent-policy/README.md#shared-skill-ownership).
 

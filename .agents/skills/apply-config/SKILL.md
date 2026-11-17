@@ -13,6 +13,8 @@ Resolve this repository from the skill directory's `../../..`, including when in
 2. Use `config_source="$repo"` for ordinary configuration: `.chezmoiroot` selects `home/`. For explicitly selected Agent targets, read [their host requirements](../../../agent-policy/README.md) and use `config_source="$repo/agent-policy"`. Resolve each selected target with `chezmoi --source "$config_source" source-path "$target"`; a source owned by another checkout is not a reason to edit that checkout. When the requested outcome makes this checkout the machine's default source, include the [default-source selection](../../../docs/lifecycle.md#select-the-default-source); a preview or selected-target apply alone does not switch it.
 3. Inspect the selected source's templates, modifiers, external declarations, and consumers. External archives can have a virtual `source-path` with no physical file; their owner is the corresponding entry in `home/.chezmoiexternal.toml`. Identify fields that source replaces, fields it preserves, and application write-back behavior. For Agent settings, include local model/provider choices, host socket lists, and generated fields in the preservation contract. For `~/.agents/skills`, back up the target and use `scripts/install-skills`; it removes nested extras that a selected-target chezmoi apply can leave. Verify template data and installed prerequisites through their normal clients; never obtain missing values by reading a credential store or declared environment file.
 
+Include managed parent directories in the selected targets when they must be created or their declared permissions reconciled: applying only a child file does not apply its parent's mode. Choose the narrowest directory whose managed descendants stay within the requested group, and review those descendants before applying; do not widen deployment to unrelated configuration to fix a directory's permissions.
+
 ## Prepare and review
 
 Run the repository's validation command from its root. The tests use synthetic destinations; a pass is preparation, not evidence that the real host has loaded the configuration.
@@ -32,15 +34,16 @@ Before writing, state which behavior changes and preserve independent recovery c
 
 Establish one writer and bind the write to the reviewed source and destination according to [the apply procedure](../../../docs/lifecycle.md#apply). A hash check followed by an uncoordinated write does not prevent a race. If the application or another editing session cannot be coordinated, leave that target pending. Do not stop an in-use application to manufacture quiescence.
 
-Once a target's prerequisites, recovery copy, diff, and authorization are satisfied:
+Once a target's prerequisites, recovery copy, diff, and authorization are satisfied, create any missing unmanaged parents separately. `mkdir -p` does not reconcile managed directory permissions; use the reviewed directory targets selected above.
 
 ```sh
-mkdir -p "$(dirname "$target")"
 chezmoi --source "$config_source" --refresh-externals=never apply --exclude=encrypted,scripts "$target"
 chezmoi --source "$config_source" --refresh-externals=never status --exclude=encrypted "$target"
 ```
 
 Select required pinned external directories explicitly alongside their consumers; applying a shell file alone does not install its plugins. Package installation, credential setup, and lifecycle scripts remain separate actions. If a call fails or its result is uncertain, inspect the resulting target before deciding whether to resume, restore the selected backup, or retry; do not rerun the whole group blindly.
+
+Check the selected directories' actual modes alongside file contents and modes; a clean child-file status does not verify its parent directory.
 
 Verify both the intended change and the preservation contract, then check for unexplained drift on a repeated apply. Reload or restart the actual consumer when that is safe: a new login shell for shell behavior, the selected application for its UI or configuration, and a fresh session of each affected Agent host for settings and instruction loading. Verify CLI and Desktop separately when both consume a setting; a nested process under another agent's sandbox cannot establish the normal host's behavior. Report unavailable runtime checks as unfinished validation, with the exact blocker.
 

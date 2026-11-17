@@ -1,0 +1,13 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- $defaults := includeTemplate "omp/models.yml" . | fromYaml -}}
+{{- $stdin := .chezmoi.stdin -}}
+{{- $current := dict -}}
+{{- if $stdin -}}{{- $current = fromYaml $stdin -}}{{- end -}}
+{{- $out := mergeOverwrite (deepCopy $defaults) $current -}}
+{{- $magpie := index $out "providers" "magpie" -}}
+{{- $_ := set $magpie "models" (index $defaults "providers" "magpie" "models") -}}
+{{- if deepEqual $current $out -}}
+  {{- $stdin -}}
+{{- else -}}
+  {{ toYaml $out }}
+{{- end -}}

@@ -25,14 +25,22 @@ class AgentConfigTests(unittest.TestCase):
             ".chezmoitemplates/claude/settings.json",
             ".chezmoitemplates/codex/config.toml",
             ".chezmoitemplates/pi/settings.json",
+            ".chezmoitemplates/omp/config.yml",
+            ".chezmoitemplates/omp/models.yml",
             "dot_claude/modify_private_settings.json",
             "dot_codex/modify_private_config.toml",
             "private_dot_pi/private_agent/modify_private_settings.json",
+            "private_dot_pi/private_agent/private_AGENTS.md.tmpl",
+            "private_dot_omp/private_agent/private_AGENTS.md.tmpl",
+            "private_dot_omp/private_agent/modify_private_config.yml",
+            "private_dot_omp/private_agent/modify_private_models.yml",
             "modify_private_dot_claude.json",
         ):
             target = self.source / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / "agent-policy" / name, target)
+        shutil.copytree(ROOT / "agent-policy/.chezmoitemplates/agents",
+                        self.source / ".chezmoitemplates/agents")
         self.environment = {
             "HOME": str(self.destination), "TMPDIR": str(self.base),
             "PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
@@ -291,6 +299,74 @@ host_authorization = "keep"
         for key, value in current.items():
             self.assertEqual(actual[key], value)
         self.assertEqual(actual["defaultTools"], ["+codemode"])
+
+    def read_yaml(self, target):
+        return json.loads(run(
+            "ruby", "-ryaml", "-rjson", "-e",
+            "puts JSON.generate(YAML.load_file(ARGV.fetch(0)))", str(target),
+        ).stdout)
+
+    def test_omp_fresh_home_routes_and_shared_instructions(self):
+        run(*self.chezmoi, "apply", "--exclude=scripts,encrypted",
+            str(self.destination / ".omp"), env=self.environment)
+        config = self.read_yaml(self.apply(".omp/agent/config.yml"))
+        models = self.read_yaml(self.apply(".omp/agent/models.yml"))
+        provider = models["providers"]["magpie"]
+        self.assertEqual(provider["baseUrl"], "http://127.0.0.1:3425/v1")
+        self.assertEqual(provider["auth"], "none")
+        available = {"magpie/" + model["id"]: model for model in provider["models"]}
+        for role, selector in config["modelRoles"].items():
+            model, effort = selector.rsplit(":", 1)
+            self.assertIn(model, available, role)
+            self.assertIn(effort, available[model]["thinking"]["efforts"], role)
+        for agent, alias in config["task"]["agentModelOverrides"].items():
+            selector = config["modelRoles"][alias.removeprefix("@")]
+            expected = "gpt-6-astra" if agent in ("reviewer", "security-reviewer") else "gpt-6.1-sol"
+            self.assertEqual(selector.split(":")[0], "magpie/codex/" + expected)
+        instructions = self.apply(".omp/agent/AGENTS.md")
+        shared = self.apply(".pi/agent/AGENTS.md")
+        self.assertEqual(instructions.read_bytes(), shared.read_bytes())
+        self.assertNotIn(str(Path.home()), instructions.read_text())
+        self.assertNotIn(str(ROOT), instructions.read_text())
+        self.assertEqual(instructions.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(instructions.parent.stat().st_mode & 0o777, 0o700)
+
+    def test_omp_host_settings_and_other_providers_survive(self):
+        config = self.apply(".omp/agent/config.yml", """# Host preferences.
+theme: {dark: titanium}
+modelRoles: {custom: local/private-model, default: old/model}
+task: {maxConcurrency: 3, agentModelOverrides: {custom: local/worker}}
+dev: {autoqaConsent: granted}
+tier: {openai: priority}
+""")
+        models = self.apply(".omp/agent/models.yml", """providers:
+  other: {baseUrl: 'http://localhost:9000/v1', auth: none}
+  magpie:
+    baseUrl: http://localhost:7777/v1
+    auth: oauth
+    headers: {X-Host: retained}
+    models: [{id: retired-model}]
+""")
+        actual = self.read_yaml(config)
+        self.assertEqual(actual["theme"], {"dark": "titanium"})
+        self.assertEqual(actual["modelRoles"]["custom"], "local/private-model")
+        self.assertEqual(actual["task"]["maxConcurrency"], 3)
+        self.assertEqual(actual["task"]["agentModelOverrides"]["custom"], "local/worker")
+        self.assertEqual(actual["dev"], {"autoqaConsent": "granted"})
+        self.assertEqual(actual["tier"], {"openai": "priority"})
+        providers = self.read_yaml(models)["providers"]
+        self.assertEqual(providers["other"], {"baseUrl": "http://localhost:9000/v1", "auth": "none"})
+        self.assertEqual(providers["magpie"]["baseUrl"], "http://localhost:7777/v1")
+        self.assertEqual(providers["magpie"]["auth"], "oauth")
+        self.assertEqual(providers["magpie"]["headers"]["X-Host"], "retained")
+        self.assertEqual({model["id"] for model in providers["magpie"]["models"]},
+                         {"codex/gpt-6.1-sol", "codex/gpt-6-astra"})
+        for target in (config, models):
+            before = "# Retain formatting on a semantic no-op.\n" + target.read_text()
+            target.write_text(before)
+            self.apply(str(target.relative_to(self.destination)))
+            self.assertEqual(target.read_text(), before)
+            self.assertEqual(target.stat().st_mode & 0o777, 0o600)
 
     def test_source_removal_and_explicit_retirement_have_different_effects(self):
         relative = ".codex/config.toml"
