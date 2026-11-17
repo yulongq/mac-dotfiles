@@ -8,17 +8,31 @@ providers:
     compat:
       promptCacheSessionHeader: x-session-affinity
     models:
-      - id: codex/gpt-6-astra
-        name: GPT-6-Astra
+      - id: codex/gpt-6.2-sol
+        name: GPT-6.2-Sol
         reasoning: true
         thinking:
           mode: effort
           efforts: [low, medium, high, xhigh, max]
         input: [text, image]
-        contextWindow: 872000
+        contextWindow: 500000
         maxTokens: 128000
         cost:
-          input: 10
-          output: 50
-          cacheRead: 1
-          cacheWrite: 12.5
+          input: 2
+          output: 10
+          cacheRead: 0.1
+          cacheWrite: 2.5
+      - id: codex/gpt-6.2-astra
+        name: GPT-6.2-Astra
+        reasoning: true
+        thinking:
+          mode: effort
+          efforts: [low, medium, high, xhigh, max]
+        input: [text, image]
+        contextWindow: 272000
+        maxTokens: 128000
+        cost:
+          input: 8
+          output: 40
+          cacheRead: 0.4
+          cacheWrite: 10
