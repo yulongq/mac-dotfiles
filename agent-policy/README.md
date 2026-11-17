@@ -26,16 +26,16 @@ The YAML modifiers preserve undeclared settings and providers. `config.yml` mana
 
 | Workload | Model through Magpie | Thinking |
 | --- | --- | --- |
-| Default conversation, general task, history consultation, vision, commit | `codex/gpt-6.1-sol` | `high` |
-| Scout | `codex/gpt-6.1-sol` | `medium` |
-| Sonic, smol, tiny background work, memory | `codex/gpt-6.1-sol` | `low` |
+| Default conversation, general task, history consultation, vision, commit | `codex/gpt-6-astra` | `high` |
+| Scout | `codex/gpt-6-astra` | `medium` |
+| Sonic, smol, tiny background work, memory | `codex/gpt-6-astra` | `low` |
 | Slow, planning, advisor, code review, security review | `codex/gpt-6-astra` | `xhigh` |
 
-This allocation follows the existing host's Sol execution / Astra reasoning split, with lower effort for bounded discovery and mechanical work. It is an operating choice, not a measured quality ranking. The `vision` role analyzes images; neither chat model is assigned to image generation, speech, web search, or a dedicated judge runner. Assigning the advisor role does not enable automatic advisor execution.
+All managed chat roles and bundled agents use Astra through Magpie, with lower effort for bounded discovery and mechanical work. The `vision` role analyzes images; the chat model is not assigned to image generation, speech, web search, or a dedicated judge runner. Assigning the advisor role does not enable automatic advisor execution.
 
-`models.yml` owns Magpie's complete two-model inventory, including the context limits, effort ladders, and cost estimates adopted from the existing host configuration. Those estimates are not a verified billing rate card. Existing Magpie endpoint, API, authentication, headers, and compatibility overrides survive; missing values are seeded for the loopback OpenAI Responses gateway at `http://127.0.0.1:3425/v1`, without authentication, with the `x-session-affinity` cache header. Other providers survive unchanged. Reapplying restores the declared model inventory. A semantic no-op preserves file bytes. The three files declare private permissions (`0600`); their directories declare `0700`, which requires selecting the directory during apply rather than only its child files.
+`models.yml` owns Magpie's Astra model inventory, including the context limits, effort ladder, and cost estimates adopted from the existing host configuration. Those estimates are not a verified billing rate card. Existing Magpie endpoint, API, authentication, headers, and compatibility overrides survive; missing values are seeded for the loopback OpenAI Responses gateway at `http://127.0.0.1:3425/v1`, without authentication, with the `x-session-affinity` cache header. Other providers survive unchanged. Reapplying restores the declared model inventory. A semantic no-op preserves file bytes. The three files declare private permissions (`0600`); their directories declare `0700`, which requires selecting the directory during apply rather than only its child files.
 
-On another machine, install OMP through the selected vendor owner and make Magpie expose these model IDs. Run Magpie locally on the default endpoint or configure its host-owned endpoint and authentication before activation; the dotfiles do not install the gateway or copy credentials. Keep loopback in both `NO_PROXY` and `no_proxy`. Preserve recovery copies of existing non-secret targets and follow the [configuration lifecycle](../docs/lifecycle.md). The selected `.omp` directory deploys the three managed files and directory modes while retaining unmanaged application data:
+On another machine, install OMP through the selected vendor owner and make Magpie expose `codex/gpt-6-astra`. Run Magpie locally on the default endpoint or configure its host-owned endpoint and authentication before activation; the dotfiles do not install the gateway or copy credentials. Keep loopback in both `NO_PROXY` and `no_proxy`. Preserve recovery copies of existing non-secret targets and follow the [configuration lifecycle](../docs/lifecycle.md). The selected `.omp` directory deploys the three managed files and directory modes while retaining unmanaged application data:
 
 ```sh
 chezmoi --source "$PWD/agent-policy" --refresh-externals=never diff --recursive --exclude=encrypted,scripts "$HOME/.omp"

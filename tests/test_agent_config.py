@@ -317,12 +317,12 @@ host_authorization = "keep"
         available = {"magpie/" + model["id"]: model for model in provider["models"]}
         for role, selector in config["modelRoles"].items():
             model, effort = selector.rsplit(":", 1)
+            self.assertEqual(model, "magpie/codex/gpt-6-astra", role)
             self.assertIn(model, available, role)
             self.assertIn(effort, available[model]["thinking"]["efforts"], role)
         for agent, alias in config["task"]["agentModelOverrides"].items():
             selector = config["modelRoles"][alias.removeprefix("@")]
-            expected = "gpt-6-astra" if agent in ("reviewer", "security-reviewer") else "gpt-6.1-sol"
-            self.assertEqual(selector.split(":")[0], "magpie/codex/" + expected)
+            self.assertEqual(selector.split(":")[0], "magpie/codex/gpt-6-astra", agent)
         instructions = self.apply(".omp/agent/AGENTS.md")
         shared = self.apply(".pi/agent/AGENTS.md")
         self.assertEqual(instructions.read_bytes(), shared.read_bytes())
@@ -360,7 +360,7 @@ tier: {openai: priority}
         self.assertEqual(providers["magpie"]["auth"], "oauth")
         self.assertEqual(providers["magpie"]["headers"]["X-Host"], "retained")
         self.assertEqual({model["id"] for model in providers["magpie"]["models"]},
-                         {"codex/gpt-6.1-sol", "codex/gpt-6-astra"})
+                         {"codex/gpt-6-astra"})
         for target in (config, models):
             before = "# Retain formatting on a semantic no-op.\n" + target.read_text()
             target.write_text(before)
