@@ -20,6 +20,8 @@ From the checkout root, run `ruby agent-policy/dot_agents/exact_skills/scripts/v
 
 OMP retains its current installation owner; the managed sources target the default profile under `~/.omp/agent`. They contain no checkout path, username, credential, or session data. The `AGENTS.md` template renders the same shared instructions as Pi and Codex. OMP discovers the existing `~/.agents/skills` registry directly, so it needs no duplicate skill installation or absolute symlink. Named profiles and a relocated `PI_CODING_AGENT_DIR` need an explicit destination selection.
 
+OMP uses the 1Password SSH agent through the inherited `SSH_AUTH_SOCK`; the managed Zsh environment in `home/dot_config/zsh/environment.zsh` owns that selection. On a new Mac, enable the SSH agent in 1Password, deploy the shared shell environment, and launch OMP from a fresh login shell. The socket path is derived from `$HOME`, with no credential or private key copied into OMP settings. Approved OMP shell commands retain ambient socket access; OMP has no Unix-socket allowlist corresponding to Codex's network permission profile. Verify the inherited variable and connectivity from OMP's actual shell tool; an existing socket file alone does not establish access.
+
 The YAML modifiers preserve undeclared settings and providers. `config.yml` manages the declared `modelRoles` entries and the six bundled agents' `task.agentModelOverrides`, retaining the bundled prompts, tool restrictions, and output schemas. Higher-precedence project settings, CLI flags, and explicit caller choices can affect effective selection; inspect `omp config get modelRoles --json` and `omp config get task.agentModelOverrides --json` in the intended working directory.
 
 | Workload | Model through Magpie | Thinking |

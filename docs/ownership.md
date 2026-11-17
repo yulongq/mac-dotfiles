@@ -60,6 +60,7 @@ The modifiers own how source and destination combine. Review their field boundar
 | Pi settings | Source replaces declared top-level values. Provider, model, thinking level, enabled models, and per-model thinking levels remain undeclared and host-owned. |
 | OMP settings | Source deep-overlays declared role mappings and bundled-agent model overrides, preserving undeclared preferences, permissions, roles, and agents. Removing a declaration leaves its destination value until explicit retirement. |
 | OMP Magpie provider | Source replaces the complete `models` list. Missing connection fields are seeded from the managed defaults; existing Magpie connection fields and other providers survive. Credentials and gateway installation are not managed. |
+| OMP SSH agent | The managed Zsh environment selects the 1Password socket through `SSH_AUTH_SOCK`; OMP inherits it at launch. 1Password owns agent activation and authorization. OMP settings do not duplicate the socket path or Codex's sandbox allowlist. |
 
 The personal baseline keeps Codex copy-on-select enabled and displays context use, context size, the five-hour limit, and thread ID alongside model, directory, and branch. Claude Code's retry watchdog is capped at 1,800,000 milliseconds; a larger value permits longer retry waits. Socket seeds select 1Password without installing or changing the SSH provider. These choices are reviewed independently of unrelated permission changes.
 
