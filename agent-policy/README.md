@@ -26,12 +26,12 @@ The YAML modifiers preserve undeclared settings and providers. `config.yml` mana
 
 | Workload | Model through Magpie | Thinking | Service tier |
 | --- | --- | --- | --- |
-| Default conversation, general task, history consultation, vision, commit | `codex/gpt-6.2-sol` | `high` | Ultrafast |
-| Scout | `codex/gpt-6.2-sol` | `medium` | Ultrafast |
-| Sonic, smol, tiny background work, memory | `codex/gpt-6.2-sol` | `low` | Ultrafast |
+| Default conversation, general task, history consultation, vision, commit | `codex/gpt-6.2-sol` | `high` | Fast |
+| Scout | `codex/gpt-6.2-sol` | `medium` | Fast |
+| Sonic, smol, tiny background work, memory | `codex/gpt-6.2-sol` | `low` | Fast |
 | Slow, planning, advisor, code review, security review | `codex/gpt-6.2-astra` | `xhigh` | Fast |
 
-In Magpie's Agent picker for OMP, set GPT-6.2 Sol to Ultrafast and GPT-6.2 Astra to Fast. Magpie applies these host-local tiers by caller and model, including OMP's subagent requests. It identifies the caller through the configured `User-Agent: omp` header. Magpie falls back to Fast when no eligible account can serve Sol at Ultrafast. The `vision` role analyzes images. Image generation, speech, web search, and judging have their own model-kind roles. Assigning the advisor role leaves automatic advisor execution under its own setting.
+In Magpie's Agent picker for OMP, set both GPT-6.2 Sol and GPT-6.2 Astra to Fast. Magpie applies these host-local tiers by caller and model, including OMP's subagent requests. It identifies the caller through the configured `User-Agent: omp` header. The `vision` role analyzes images. Image generation, speech, web search, and judging have their own model-kind roles. Assigning the advisor role leaves automatic advisor execution under its own setting.
 
 `models.yml` owns the Magpie model inventory, including the context limits, effort ladder, and base cost estimates from the gateway catalog. Actual usage charges depend on the account and service tier. The modifier sets the case-insensitive `User-Agent` header to `omp` so Magpie can apply OMP's tier settings. Existing endpoint, API, authentication, other headers, and compatibility overrides survive. Missing values are seeded for the loopback OpenAI Responses gateway at `http://127.0.0.1:3425/v1`, without authentication, with the `x-session-affinity` cache header. Other providers survive unchanged. A semantic no-op preserves file bytes. The three files declare private permissions (`0600`). Their directories declare `0700`, which requires selecting the directory during apply.
 
@@ -44,7 +44,7 @@ scripts/check-home agent-policy "$HOME/.omp/agent/AGENTS.md" "$HOME/.omp/agent/c
 omp models magpie --json --no-extensions
 ```
 
-After normal OMP requests through both models, check the corresponding entries in Magpie's request history for the OMP caller, the model, and the actual service tier. For Sol, distinguish Ultrafast from a Fast fallback. `omp models` verifies the loaded inventory. Magpie's request entries verify the tier used by each request.
+After normal OMP requests through both models, check the corresponding entries in Magpie's request history for the OMP caller, the model, and the actual service tier. `omp models` verifies the loaded inventory. Magpie's request entries verify the tier used by each request.
 
 Start a fresh session to load the instructions. OMP deliberately omits context files named `AGENTS.md` from task subagents; model routing does not make those children inherit global or project instructions. Include the applicable constraints in each task's shared context and brief. Do not duplicate the full global policy into sticky `RULES.md` merely to bypass that runtime boundary.
 
