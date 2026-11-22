@@ -8,6 +8,7 @@ default_permissions = "development"
 mcp_oauth_credentials_store = "keyring"
 model_reasoning_summary = "concise"
 project_doc_fallback_filenames = [".claude/CLAUDE.md", "CLAUDE.md"]
+project_doc_max_bytes = 40960
 suppress_unstable_features_warning = true
 web_search = "live"
 
@@ -82,7 +83,6 @@ hide_rate_limit_model_nudge = true
 "{{ .chezmoi.homeDir }}/.ssh" = "deny"
 "{{ .chezmoi.homeDir }}/.ssh/config" = "read"
 "{{ .chezmoi.homeDir }}/.ssh/allowed_signers" = "read"
-"{{ .chezmoi.homeDir }}/.ssh/known_hosts" = "write"
 
 [permissions.development.filesystem.":workspace_roots"]
 ".env" = "read"
