@@ -4,7 +4,7 @@ Configure an Apple Silicon Mac using the installation owners in [ownership.md](o
 
 ## Install tools
 
-1. Install Homebrew under `/opt/homebrew`, chezmoi 2.73.1 or newer, and Python 3.11+ for validation.
+1. Install Homebrew under `/opt/homebrew`, chezmoi 2.73.1 or newer, and Python 3.11+ for selected deployment and validation.
 2. Review `packages/Brewfile`, then run `brew bundle --no-upgrade --file packages/Brewfile` from the checkout root. The declaration selects required packages; it is not a cleanup list for the whole machine.
 3. Install the asdf plugins and versions needed by the selected projects. Set up the JVM, Maven, and Go distributions at the paths selected by `home/dot_pathrc`, verifying vendor checksums. Retain rustup ownership of Rust toolchains.
 4. Install the CLI and editor dependencies declared in `packages/` with their owning runtimes. Keep Codex ACP in the selected asdf Node installation and regenerate its shims; do not create a competing global copy.
@@ -14,11 +14,15 @@ Before running `scripts/validate`, make sure `asdf which nvim` resolves the decl
 
 ## Apply configuration
 
+For a selected rebuild, start with `scripts/deploy list` at the checkout root. Run `scripts/deploy diff .gitconfig` for one file or `scripts/deploy diff pi pi=sandbox codex codex=host` for two independently configured tools. Review the expanded target list, prerequisites, and changes. Once the destination is ready, repeat the same selectors with `apply`, then run `diff` again. A repeat diff should report the same scope and no pending changes. Use `--dest` with an absolute disposable home path to rehearse the deployment. Install each selected runtime through its declared owner.
+
+The inventory and prerequisite notes go to standard error. File diffs go to standard output. For shared settings, the preview lists added or replaced fields with their desired values and names fields being removed. Coordinate destination writers and use only non-secret files with this command. Claude Code account state, Codex Desktop state, and the exact skill registry have separate [deployment and recovery procedures](lifecycle.md).
+
 1. On an existing machine, identify regular files, symlinks, and unmanaged children in each selected configuration directory. Preserve uncommitted configuration changes and a recovery copy for each non-secret target being replaced. Do not copy credential stores or private environment files through repository scripts.
 2. Run `scripts/validate` and enable the local pre-push check with `git config --local core.hooksPath .githooks` after accounting for existing hooks. Select this checkout as the default source and use the scoped preview and apply commands in [lifecycle.md](lifecycle.md) for each configuration group, including `~/Brewfile` and any local shell or Git overrides. Replacing a directory symlink requires accounting for all its contents.
 3. Apply `.zprofile`, `.zshrc`, `.pathrc`, and `.config/zsh` together, then the abbreviation target, Starship, Git preferences, and helper commands. The login profile preserves existing host initialization while adding the shared environment and PATH sources. Include the plugin directories declared in `home/.chezmoiexternal.toml`; selecting `.zshrc` alone does not restore the pinned archives.
 4. Apply Neovim, Ghostty, kitty, tmux, and LazyGit configuration. Review Neovim plugin build steps; use TPM's install action for the plugins declared by `tmux.conf`. Register the managed script directory in Raycast.
-5. Configure Agent sources for the host using [their runtime requirements](../agent-policy/README.md). Check provider routes, model selections, socket access, the exact skill registry, and runtime-owned state. Back up `~/.agents/skills` before the first rebuild, then run `scripts/install-skills`; it reconstructs the registry recursively from `agent-policy/dot_agents/exact_skills`. Permission changes require explicit approval, and the default home apply does not activate Agent policy.
+5. Select [each agent's execution mode](../agent-policy/README.md#execution-modes) for the host. Check provider routes, model selections, socket access, the exact skill registry, and runtime-owned state. Back up `~/.agents/skills` before the first rebuild, then run `scripts/install-skills`; it reconstructs the registry recursively from `agent-policy/dot_agents/exact_skills`. Review permission changes separately. Agent deployment uses its own source.
 6. Repeat application and inspect scoped status/diff output. Distinguish application write-backs from unexplained source drift.
 
 ## Set up Rex

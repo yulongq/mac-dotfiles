@@ -1,0 +1,323 @@
+#!/usr/bin/env python3
+"""Preview and apply an explicit set of mac-dotfiles targets."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import platform
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+if sys.version_info < (3, 11):
+    sys.exit("scripts/deploy requires Python 3.11 or newer")
+
+import tomllib
+
+ROOT = Path(__file__).resolve().parents[1]
+HOME_SOURCE = ROOT
+AGENT_SOURCE = ROOT / "agent-policy"
+MODE = "MAC_DOTFILES_EXECUTION_MODE"
+EXCLUDE = "--exclude=scripts,encrypted,remove"
+SETTINGS = {"claude": ".claude/settings.json", "codex": ".codex/config.toml",
+            "pi": ".pi/agent/settings.json"}
+PI_SHELL = ".pi/agent/bin/sandbox-bash"
+
+# Roots are expanded from chezmoi's managed inventory. The second column lists
+# runtime prerequisites; deployment never installs or starts those consumers.
+TOOLS = {
+    "asdf": (".asdfrc .tool-versions", "asdf and the selected project plugins/toolchains"),
+    "claude": (".claude/CLAUDE.md .claude/hooks .claude/scripts .claude/settings.json .claude/skills",
+               "Claude Code, jq, Gitleaks, Herdr's agent-state hook and the shared .agents/skills registry"),
+    "codex": (".codex/AGENTS.md .codex/managed-hooks .codex/config.toml",
+              "Codex CLI; review /etc/codex/requirements.toml, managed MCP servers and permission ownership"),
+    "ghostty": (".config/ghostty", "Ghostty and JetBrains Maple Mono installed for all users"),
+    "git": (".gitconfig .githelpers .gitignore_global .gitmessage .local/bin/git-brst "
+            ".local/bin/git-check-uncommitted .local/bin/git-cm .local/bin/git-publish "
+            ".local/bin/git-uncommit .local/bin/g .local/bin/gbrm .local/bin/gl .local/bin/glg .local/bin/gwip",
+            "Git, diffnav and Neovim; host identity/signing in .gitconfig.local"),
+    "herdr": (".config/herdr", "Herdr"),
+    "homebrew": ("Brewfile .config/homebrew .local/bin/bb .local/bin/bubo", "Homebrew under /opt/homebrew"),
+    "kitty": (".config/kitty", "kitty and JetBrains Maple Mono installed for all users"),
+    "lazygit": (".config/lazygit", "LazyGit and Git"),
+    "markdownlint": (".config/markdownlint .local/bin/markdown-validate", "markdownlint-cli2"),
+    "nvim": (".config/nvim", "asdf Neovim, plugin build tools and editor dependencies in docs/setup.md"),
+    "omp": (".omp/agent/AGENTS.md .omp/agent/config.yml .omp/agent/models.yml",
+            "macOS Ruby for YAML previews, OMP and the configured Magpie gateway"),
+    "pi": (".pi/agent/AGENTS.md .pi/agent/keybindings.json .pi/agent/extensions/session-id-footer.ts "
+           f".pi/agent/settings.json {PI_SHELL}", "Pi with FooterComponent support; host-owned provider and extensions"),
+    "raycast": (".config/raycast", "Raycast with the script directory registered"),
+    "rex": (".config/rex .local/bin/setup-rex", "Rex; run setup-rex separately for application preferences"),
+    "ripgrep": (".ripgreprc .ignore", "ripgrep"),
+    "starship": (".config/starship.toml", "Starship"),
+    "tmux": (".config/tmux .local/bin/ta .local/bin/tat .local/bin/tk .local/bin/tka .local/bin/tn .local/bin/tna",
+             "tmux and the pinned TPM archive; TPM installs configured plugins separately"),
+    "uv": (".config/uv", "uv"),
+    "yamllint": (".config/yamllint .yamllint", "yamllint"),
+    "zsh": (".zprofile .zshrc .pathrc .config/zsh .config/zsh-abbr .config/starship.toml",
+            "Zsh, Homebrew, zsh-abbr, fzf, zoxide, Starship, eza, the pinned Zsh plugins, and host toolchains"),
+}
+MODE_PREREQS = {
+    "claude": "Claude Code with Bash sandbox support; managed policy and tool permissions take precedence",
+    "codex": "Codex CLI with permission profile support; /etc/codex/requirements.toml can restrict host",
+    "pi": "Pi with shellPath support; host-owned shell and extension choices require review",
+}
+FILE_PREREQS = {
+    ".gitmessage": "Git commit template; select it with commit.template in Git",
+    ".gitignore_global": "Git global ignore file; select it with core.excludesFile in Git",
+    ".githelpers": "sourced by the aliases in .gitconfig",
+    ".zprofile": "Zsh login shell, .config/zsh/environment.zsh and .pathrc",
+    ".zshrc": "interactive Zsh with the zsh tool group's other files, plugins and runtime dependencies",
+    ".config/kitty/kitty.conf": "kitty, JetBrains Maple Mono, enabled-layouts.conf and current-theme.conf",
+    ".config/rex/init.lua": "Rex and .config/rex/actions/confirm_close.lua",
+    ".config/tmux/tmux.conf": "tmux, .config/tmux/themes/tokyonight_moon.tmux and the pinned TPM archive",
+    ".local/bin/colortest": "Perl and a 256-color terminal",
+    ".local/bin/copy": "Bash and macOS pbcopy",
+    ".local/bin/sha256": "Bash and sha256sum",
+    ".local/bin/update_jumpstart": "Git checkout with a jumpstart-pro remote",
+    ".local/bin/ygs": "Yarn project with a generate script and http-server on PATH",
+}
+
+
+def under(path, root):
+    return path == root or path.startswith(root + "/")
+
+
+def note(message):
+    print(message, file=sys.stderr, flush=True)
+
+
+def run(command, env, *, mixed=False):
+    result = subprocess.run(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode:
+        if mixed:
+            if b"Pi already has a host-owned shellPath" in result.stderr:
+                raise ValueError("Pi sandbox conflicts with the existing host-owned shellPath in " + str(command[-1]))
+            raise ValueError(f"chezmoi could not process {command[-1]}. Check the file syntax, selected "
+                             "settings and destination permissions.")
+        raise ValueError(result.stderr.decode(errors="replace").strip() or "chezmoi failed")
+    return result.stdout
+
+
+def selection(selectors):
+    roots = {}
+    modes = {}
+    for selector in selectors:
+        if "=" in selector:
+            tool, mode = selector.split("=", 1)
+            if tool not in SETTINGS or mode not in ("host", "sandbox"):
+                raise ValueError(f"unknown execution mode: {selector}")
+            if tool in modes and modes[tool] != mode:
+                raise ValueError(f"conflicting modes for {tool}")
+            modes[tool] = mode
+        elif selector in TOOLS:
+            roots.update(dict.fromkeys(TOOLS[selector][0].split(), True))
+        else:
+            if not selector or any(part in ("", ".", "..") for part in selector.split("/")):
+                raise ValueError("use an exact home-relative managed file path")
+            roots.setdefault(selector, False)
+    return roots, modes
+
+
+def agent_path(path):
+    return any(under(path, prefix) for prefix in (".claude", ".codex", ".pi", ".omp"))
+
+
+def settings_document(path, contents):
+    if not contents.strip():
+        return {}
+    if path.suffix == ".toml":
+        return tomllib.loads(contents)
+    if path.suffix == ".yml":
+        result = subprocess.run(
+            ["/usr/bin/ruby", "-ryaml", "-rjson", "-e", "print JSON.generate(YAML.safe_load(STDIN.read))"],
+            input=contents, capture_output=True, text=True,
+        )
+        if result.returncode:
+            raise ValueError(f"cannot read {path.name} as YAML for preview")
+        contents = result.stdout
+    return json.loads(contents)
+
+
+def show_changed_fields(current, target, prefix=()):
+    for key in sorted(current.keys() | target.keys()):
+        fields = (*prefix, key)
+        name = ".".join(fields)
+        if key not in target:
+            print(f"  - {name}")
+        elif key not in current or current[key] != target[key]:
+            before = current.get(key)
+            after = target[key]
+            if isinstance(after, dict) and after and (before is None or isinstance(before, dict)):
+                show_changed_fields(before or {}, after, fields)
+            else:
+                sign = "~" if key in current else "+"
+                print(f"  {sign} {name} = {json.dumps(after, ensure_ascii=False, sort_keys=True)}")
+
+
+def preview_mixed(path, data, command, env):
+    """Show owned fields and mode metadata without printing host settings."""
+    if not data:
+        return
+    print(f"diff {path.relative_to(Path(env['HOME']))}")
+    for line in data.splitlines():
+        if re.fullmatch(rb"(?:old mode|new mode|new file mode) [0-7]+", line):
+            print(line.decode())
+        if line.startswith(b"@@"):
+            break
+    if path.name == ".zprofile":
+        for line in data.splitlines():
+            if line[:1] in (b"+", b"-") and line[1:] in (
+                b'source "$HOME/.config/zsh/environment.zsh"', b'source "$HOME/.pathrc"'
+            ):
+                print(line.decode())
+        return
+    current = settings_document(path, path.read_text()) if path.exists() else {}
+    target = settings_document(path, run([*command, "cat", str(path)], env, mixed=True).decode())
+    show_changed_fields(current, target)
+    if env.get(MODE):
+        print(f"  requested execution mode: {env[MODE].removeprefix('baseline-')}")
+
+
+def deploy(args, scratch):
+    roots, modes = selection(args.selectors)
+    dest = args.dest or Path.home()
+    if not dest.is_absolute() or not dest.is_dir() or dest.is_symlink() or dest.resolve() == Path("/"):
+        raise ValueError("destination must be an existing absolute home directory")
+    dest = dest.resolve()
+    if platform.system() != "Darwin" or platform.machine() != "arm64":
+        raise ValueError("this configuration requires native Apple Silicon macOS")
+    if not shutil.which("chezmoi"):
+        raise ValueError("install chezmoi through Homebrew first")
+    if modes.get("pi") == "sandbox" and not os.access("/usr/bin/sandbox-exec", os.X_OK):
+        raise ValueError("Pi sandbox unavailable: /usr/bin/sandbox-exec is required")
+    env = {**os.environ, "HOME": str(dest)}
+    env.pop(MODE, None)
+    base = ["chezmoi", "--destination", str(dest), "--working-tree", str(ROOT),
+            "--refresh-externals=never", "--use-builtin-diff", "--color=false"]
+    if args.dest is not None:
+        base += ["--config", "/dev/null", "--config-format", "toml",
+                 "--persistent-state", str(scratch / "state"), "--cache", str(scratch / "cache")]
+    external = tomllib.loads((ROOT / "home/.chezmoiexternal.toml").read_text())
+    ignore = [name for name in external if not any(under(root, name) or (subtree and under(name, root))
+                                                   for root, subtree in roots.items())]
+    base += ["--override-data", json.dumps({"deployIgnoredExternals": ignore})]
+    note(f"Destination: {dest}; requires native Apple Silicon macOS, Python 3.11+, chezmoi >= "
+         + (ROOT / "home/.chezmoiversion").read_text().strip())
+    note("Before apply, coordinate destination writers and preserve recovery copies of non-secret files. "
+         "Use the manual lifecycle for files containing protected values.")
+    for selector in dict.fromkeys(args.selectors):
+        if selector in FILE_PREREQS:
+            note(f"{selector} runtime: {FILE_PREREQS[selector]}")
+    for tool, (paths, prereq) in TOOLS.items():
+        if tool in args.selectors or any(under(root, path) for root in roots if root not in FILE_PREREQS
+                                         for path in paths.split()):
+            note(f"{tool} runtime: {prereq}")
+    for tool, mode in modes.items():
+        note(f"{tool}={mode}: {MODE_PREREQS[tool]}")
+    requirements = Path("/etc/codex/requirements.toml")
+    if modes.get("codex") == "host" and requirements.exists():
+        with requirements.open("rb") as stream:
+            allowed = tomllib.load(stream).get("allowed_permission_profiles")
+        if allowed is not None and allowed.get(":danger-full-access") is not True:
+            note(f"Codex host is disallowed on this Mac by {requirements}. The user preference cannot activate host "
+                 "under this policy. Verify the effective shell behavior with scripts/check-execution.")
+    for name in sorted(external.keys() - set(ignore)):
+        note(f"{name}: requires the cached pinned archive or network access to GitHub")
+    requested = dict(roots)
+    for tool, mode in modes.items():
+        requested.setdefault(SETTINGS[tool], False)
+        if tool == "pi" and mode == "sandbox":
+            requested[PI_SHELL] = False
+
+    # Each group is a single chezmoi invocation with the same source, mode and
+    # recursion rules during preview and apply. Mixed files get a private diff.
+    groups = {}
+    for source in (HOME_SOURCE, AGENT_SOURCE):
+        scoped = {root: subtree for root, subtree in requested.items() if agent_path(root) == (source == AGENT_SOURCE)}
+        if not scoped:
+            continue
+        cmd = [*base, "--source", str(source)]
+        query = [*cmd, "managed", "--format=json", "--path-style=all", EXCLUDE]
+        files = json.loads(run([*query, "--include=files,symlinks"], env))
+        dirs = json.loads(run([*query, "--include=dirs"], env))
+        selected = set()
+        for root, subtree in scoped.items():
+            if source == AGENT_SOURCE and not any(under(root, p) for tool in (*SETTINGS, "omp") for p in TOOLS[tool][0].split()) and root != PI_SHELL:
+                raise ValueError(f"{root} is outside the supported CLI configuration; use its owning workflow")
+            matches = [f for f in files if f == root or (subtree and under(f, root))]
+            if not matches:
+                raise ValueError(f"no managed files for {root}; select a tool name or exact file")
+            selected.update(matches)
+        for name in list(selected):
+            baseline = any(under(name, root) for root in roots)
+            for parent in Path(name).parents:
+                if parent == Path("."):
+                    continue
+                p = parent.as_posix()
+                local = dest / parent
+                if local.is_symlink() or (local.exists() and not local.is_dir()):
+                    raise ValueError(f"cannot traverse {p}; coordinate its owner first")
+                if not local.is_dir() or (baseline and Path(dirs[p]["sourceRelative"]).name.startswith("private_")):
+                    selected.add(p)
+        for name in sorted(selected, key=lambda n: (n.count("/"), n)):
+            target = dest / name
+            entry = (dirs if name in dirs else files)[name]
+            basename = Path(entry["sourceRelative"]).name
+            if name in files:
+                if target.is_symlink() and not basename.startswith("symlink_"):
+                    raise ValueError(f"cannot replace symlink {name}; review its owner first")
+                if not target.is_symlink() and target.is_dir():
+                    raise ValueError(f"cannot replace directory {name}; review its contents first")
+            owner = next((t for t in modes if SETTINGS[t] == name), None)
+            mode = modes[owner] if owner else ""
+            if owner and name in roots:
+                mode = "baseline-" + mode
+            mixed = name if basename.startswith("modify_") else ""
+            groups.setdefault((source, mode, mixed), []).append(str(target))
+
+    for (source, mode, mixed), paths in groups.items():
+        label = mode or "base"
+        source_name = "home" if source == HOME_SOURCE else "agent-policy"
+        for path in paths:
+            note(f"  {source_name} [{label}] {Path(path).relative_to(dest)}")
+    if args.action == "list":
+        return
+    for action in (("diff", "apply") if args.action == "apply" else ("diff",)):
+        for (source, mode, mixed), paths in groups.items():
+            cmd = [*base, "--source", str(source)]
+            child = {**env, MODE: mode}
+            data = run([*cmd, action, "--recursive=false", EXCLUDE, "--", *paths], child, mixed=bool(mixed))
+            if action == "diff" and mixed:
+                preview_mixed(Path(paths[0]), data, cmd, child)
+            elif data:
+                sys.stdout.flush()
+                sys.stdout.buffer.write(data)
+        sys.stdout.flush()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dest", type=Path, help="destination home (absolute)")
+    parser.add_argument("action", choices=("list", "diff", "apply"))
+    parser.add_argument("selectors", nargs="*", metavar="TARGET")
+    args = parser.parse_intermixed_args()
+    if not args.selectors:
+        if args.action != "list":
+            parser.error("select at least one tool, exact managed file, or AGENT=MODE")
+        for tool, (paths, _) in TOOLS.items():
+            print(f"{tool:<13} {paths}")
+        print("Execution modes: claude=host|sandbox, codex=host|sandbox, pi=host|sandbox")
+        return
+    with tempfile.TemporaryDirectory(prefix="mac-dotfiles-deploy-") as temp:
+        deploy(args, Path(temp))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError) as error:
+        sys.exit(str(error))

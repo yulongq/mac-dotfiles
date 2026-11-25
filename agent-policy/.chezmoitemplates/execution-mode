@@ -1,0 +1,5 @@
+{{- $selection := env "MAC_DOTFILES_EXECUTION_MODE" -}}
+{{- if not (has $selection (list "" "host" "sandbox" "baseline-host" "baseline-sandbox")) -}}
+  {{- fail "invalid MAC_DOTFILES_EXECUTION_MODE" -}}
+{{- end -}}
+{{- dict "baseline" (not (has $selection (list "host" "sandbox"))) "mode" (trimPrefix "baseline-" $selection) | toJson -}}

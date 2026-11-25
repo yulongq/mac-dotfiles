@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+workspace=$(pwd -P)
+home_dir=$(CDPATH='' cd -P -- "$HOME" && pwd)
+exec /usr/bin/sandbox-exec -D "WORKSPACE=$workspace" -D "SSH_DIR=$home_dir/.ssh" -p '
+(version 1)
+(allow default)
+(deny file-write*)
+(allow file-write* (subpath (param "WORKSPACE")) (literal "/dev/null"))
+(deny file-read* file-write* (subpath (param "SSH_DIR")))
+' /bin/bash "$@"

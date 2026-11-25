@@ -1,2 +1,5 @@
 **/*.test.*
 **/.DS_Store
+{{ range (get . "deployIgnoredExternals" | default list) }}
+{{ . }}
+{{ end }}

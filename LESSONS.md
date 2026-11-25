@@ -16,6 +16,8 @@ During the split-source hook repair, mock checks passed while a real Git layout 
 
 ## Deployment and actual use
 
+**Exclude unrelated external archives before asking chezmoi for the managed inventory.** With an empty cache, chezmoi resolves missing archives even with `--refresh-externals=never`. The [offline deployment test](tests/test_deploy.py) previews and applies ordinary files with a cold cache and an unreachable proxy. Selecting a Zsh or tmux archive still requires that archive.
+
 **Prove the selected live inventory and the consumer separately from rendering.** Include absent targets, symlinks, and modes in the [deployment check](docs/lifecycle.md#validate). A clean target still needs the consumer's runtime check: shell command resolution, hook registration and decisions, or instruction discovery and loading. Record which boundary was checked.
 
 The live home was missing `~/Brewfile` and the managed `new-branch` skill despite passing temporary-home tests. `bb` consequently failed, and the source did not preserve the intended Homebrew directory mode. These are deployment gaps that synthetic rendering alone cannot detect.

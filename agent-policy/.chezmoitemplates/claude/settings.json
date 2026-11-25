@@ -108,6 +108,7 @@
       "snow:*"
     ],
     "filesystem": {
+      "disabled": false,
       "allowWrite": [
         "{{ output "getconf" "DARWIN_USER_TEMP_DIR" | trim | trimSuffix "/" }}",
         "/private/tmp/.pnpm-store",

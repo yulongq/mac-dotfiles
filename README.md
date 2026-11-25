@@ -6,6 +6,17 @@ Personal development environment for Apple Silicon macOS, managed with chezmoi. 
 
 The environment uses Zsh with YAML-defined abbreviations and pinned plugin archives, asdf for selected runtimes, `~/.npm-global` for npm CLIs, `~/.pathrc` for local toolchains, and the 1Password SSH agent. LazyVim, Ghostty, kitty, and tmux provide the editor and terminal workspace. Software updates are explicit operator actions.
 
+## Deploy selected targets
+
+Run `scripts/deploy list` in this checkout to find tool names. Give `diff` and `apply` the same arguments. This example selects one dotfile, the kitty configuration, and the execution mode of two agents.
+
+```sh
+scripts/deploy diff .gitignore_global kitty claude=sandbox pi=host
+scripts/deploy apply .gitignore_global kitty claude=sandbox pi=host
+```
+
+Use an agent name such as `codex` to deploy its baseline CLI configuration. Use `codex=host` by itself to switch only its execution policy. To rebuild the baseline with a particular mode, list both selectors. The [agent deployment instructions](agent-policy/README.md#execution-modes) describe the covered operations and the fresh-session checks for each tool.
+
 ## Layout
 
 | Path | Responsibility |

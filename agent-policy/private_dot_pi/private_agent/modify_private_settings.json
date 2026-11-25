@@ -1,10 +1,23 @@
 {{- /* chezmoi:modify-template */ -}}
-{{- $settings := includeTemplate "pi/settings.json" . | fromJson -}}
+{{- $selection := includeTemplate "execution-mode" . | fromJson -}}
 {{- $stdin := .chezmoi.stdin -}}
 {{- $current := dict -}}
-{{- if $stdin -}}{{- $current = fromJson $stdin -}}{{- end -}}
+{{- if $stdin -}}{{- $current = mustFromJson $stdin -}}{{- end -}}
+{{- if not (kindIs "map" $current) -}}{{- fail "Pi settings must be a JSON object" -}}{{- end -}}
 {{- $out := deepCopy $current -}}
-{{- range $k, $v := $settings -}}{{- $out = set $out $k $v -}}{{- end -}}
+{{- if $selection.baseline -}}
+  {{- $settings := includeTemplate "pi/settings.json" . | mustFromJson -}}
+  {{- range $k, $v := $settings -}}{{- $out = set $out $k $v -}}{{- end -}}
+{{- end -}}
+{{- $helper := "~/.pi/agent/bin/sandbox-bash" -}}
+{{- if eq $selection.mode "sandbox" -}}
+  {{- if and (hasKey $out "shellPath") (ne (get $out "shellPath") $helper) -}}
+    {{- fail "Pi already has a host-owned shellPath. Review that setting before selecting sandbox." -}}
+  {{- end -}}
+  {{- $out = set $out "shellPath" $helper -}}
+{{- else if and (eq $selection.mode "host") (eq (get $out "shellPath") $helper) -}}
+  {{- $out = unset $out "shellPath" -}}
+{{- end -}}
 {{- if deepEqual $current $out -}}
   {{- $stdin -}}
 {{- else -}}

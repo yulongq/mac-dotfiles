@@ -21,6 +21,7 @@ class AgentConfigTests(unittest.TestCase):
         self.destination = self.base / "home"
         self.destination.mkdir()
         for name in (
+            ".chezmoitemplates/execution-mode",
             ".chezmoitemplates/claude/claude.json",
             ".chezmoitemplates/claude/settings.json",
             ".chezmoitemplates/codex/config.toml",
@@ -52,13 +53,88 @@ class AgentConfigTests(unittest.TestCase):
             "--cache", str(self.base / "cache"), "--refresh-externals=never", "--no-tty",
         ]
 
-    def apply(self, relative, contents=None):
+    def apply(self, relative, contents=None, *, mode=""):
         target = self.destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         if contents is not None:
             target.write_text(contents)
-        run(*self.chezmoi, "apply", "--exclude=scripts,encrypted", str(target), env=self.environment)
+        run(*self.chezmoi, "apply", "--exclude=scripts,encrypted", str(target),
+            env={**self.environment, "MAC_DOTFILES_EXECUTION_MODE": mode})
         return target
+
+    def test_claude_execution_mode_owns_only_isolation(self):
+        relative = ".claude/settings.json"
+        shared = {
+            "model": "local", "permissions": {"defaultMode": "default"},
+            "env": {"ANTHROPIC_BASE_URL": "https://route.invalid"},
+            "enabledPlugins": {"only-local": True},
+        }
+        previous = {**shared, "sandbox": {
+            "autoAllowBashIfSandboxed": False, "network": {"allowUnixSockets": []},
+            "filesystem": {"disabled": True},
+        }}
+        target = self.apply(relative, json.dumps(previous), mode="host")
+        for mode in ("host", "sandbox", "host"):
+            self.apply(relative, mode=mode)
+            actual = json.loads(target.read_text())
+            sandbox = actual.pop("sandbox")
+            self.assertEqual(actual, shared)
+            self.assertEqual(sandbox["enabled"], mode == "sandbox")
+            self.assertFalse(sandbox["autoAllowBashIfSandboxed"])
+            self.assertEqual(sandbox["network"]["allowUnixSockets"], [])
+            if mode == "sandbox":
+                self.assertFalse(sandbox["filesystem"].get("disabled", False))
+                self.assertIn("~/.ssh", sandbox["filesystem"]["denyRead"])
+            before = target.read_bytes()
+            self.apply(relative, mode=mode)
+            self.assertEqual(target.read_bytes(), before)
+        self.apply(relative)
+        self.assertFalse(json.loads(target.read_text())["sandbox"]["enabled"])
+        self.apply(relative, mode="baseline-sandbox")
+        self.assertTrue(json.loads(target.read_text())["sandbox"]["enabled"])
+
+    def test_codex_execution_mode_owns_only_isolation(self):
+        relative = ".codex/config.toml"
+        existing = '''model = "local"
+approval_policy = "never"
+model_provider = "local"
+cli_auth_credentials_store = "file"
+sandbox_mode = "workspace-write"
+[sandbox_workspace_write]
+network_access = false
+[permissions.other.filesystem]
+":root" = "read"
+[plugins."only-local"]
+enabled = true
+'''
+        target = self.apply(relative, existing, mode="sandbox")
+        shared = tomllib.loads(existing)
+        del shared["sandbox_mode"], shared["sandbox_workspace_write"], shared["permissions"]
+        for mode in ("sandbox", "host", "sandbox"):
+            self.apply(relative, mode=mode)
+            config = tomllib.loads(target.read_text())
+            self.assertEqual(config.pop("default_permissions"),
+                             ":danger-full-access" if mode == "host" else "development")
+            profiles = config.pop("permissions")
+            self.assertEqual(profiles["other"], {"filesystem": {":root": "read"}})
+            if mode == "sandbox":
+                self.assertEqual(profiles["development"]["filesystem"][str(self.destination / ".ssh")], "deny")
+            self.assertEqual(config, shared)
+            before = target.read_bytes()
+            self.apply(relative, mode=mode)
+            self.assertEqual(target.read_bytes(), before)
+        self.apply(relative, mode="baseline-host")
+        self.apply(relative)
+        config = tomllib.loads(target.read_text())
+        self.assertEqual(config["default_permissions"], ":danger-full-access")
+        self.assertEqual(config["tui"]["copy_on_select"], "always")
+
+    def test_invalid_mode_leaves_settings_untouched(self):
+        for relative, initial in ((".claude/settings.json", "{}"), (".codex/config.toml", "# empty\n")):
+            target = self.destination / relative
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.apply(relative, initial, mode="hots")
+            self.assertEqual(target.read_text(), initial)
 
     def test_claude_shared_fields_survive(self):
         current = {
@@ -299,6 +375,33 @@ host_authorization = "keep"
         for key, value in current.items():
             self.assertEqual(actual[key], value)
         self.assertEqual(actual["defaultTools"], ["+codemode"])
+
+    def test_pi_execution_mode_preserves_host_settings(self):
+        relative = ".pi/agent/settings.json"
+        settings = {"defaultProvider": "local", "defaultTools": ["read"], "shellCommandPrefix": "set -u"}
+        target = self.apply(relative, json.dumps(settings), mode="sandbox")
+        helper = "~/.pi/agent/bin/sandbox-bash"
+        for mode in ("sandbox", "host", "sandbox"):
+            self.apply(relative, mode=mode)
+            expected = settings | ({"shellPath": helper} if mode == "sandbox" else {})
+            self.assertEqual(json.loads(target.read_text()), expected)
+            before = target.read_bytes()
+            self.apply(relative, mode=mode)
+            self.assertEqual(target.read_bytes(), before)
+        self.apply(relative)
+        self.assertEqual(json.loads(target.read_text())["shellPath"], helper)
+        self.apply(relative, mode="baseline-host")
+        actual = json.loads(target.read_text())
+        self.assertNotIn("shellPath", actual)
+        self.assertEqual(actual["defaultTools"], ["+codemode"])
+
+    def test_pi_custom_shell_conflict_preserves_original(self):
+        relative = ".pi/agent/settings.json"
+        original = '{ "shellPath": "/custom/bash" }\n'
+        target = self.apply(relative, original, mode="host")
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.apply(relative, mode="sandbox")
+        self.assertEqual(target.read_text(), original)
 
     def read_yaml(self, target):
         return json.loads(run(

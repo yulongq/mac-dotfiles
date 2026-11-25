@@ -21,8 +21,8 @@ Keep `~/.claude/settings.json` and `~/.claude.json` partially managed per the [A
 
 Fields in `~/.claude/settings.json` have one of three roles:
 
-- Managed: declared in `.chezmoitemplates/claude/settings.json`, except the socket seed below. Every apply overwrites the live value. `env` is managed per variable so unrelated host variables survive; other declared top-level subtrees are replaced as a unit.
-- Seed: `model` in `$seeds` and the fragment's `sandbox.network.allowUnixSockets` list. Apply initializes a missing field and preserves an existing value, including an empty socket list.
+- The baseline owns the declared settings. It merges individual `env` variables and the declared sandbox fields while preserving the selected execution mode. Other declared top-level subtrees are replaced as a unit. A mode-only deployment updates the isolation fields described in the [ownership contract](../../../docs/ownership.md#agent-settings).
+- The baseline seeds a missing `model`. The sandbox profile seeds a missing `sandbox.network.allowUnixSockets` list and preserves existing lists, including an empty list.
 - Undeclared: in neither. Apply leaves the live value as Claude Code wrote it. Removing a key from the fragment moves it here without deleting its live value.
 
 Use a seed when the application or host owns subsequent choices. `/model` owns the selected model; host configuration owns the socket list. Seed `model` as the `opus` alias rather than a model ID: a seed is written once, so an ID would freeze each machine on the generation current at its first apply, while the alias follows the host-owned Opus mapping. Being changeable inside Claude Code is not the criterion: many managed keys, such as `permissions`, which `/permissions` edits, change in a session and stay managed, so make an authorized change durable in the fragment.
