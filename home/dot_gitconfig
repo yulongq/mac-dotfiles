@@ -83,7 +83,6 @@
   colorMoved = default
 
 [pager]
-	diff = diffnav
   log = less -+X
 
 [fetch]

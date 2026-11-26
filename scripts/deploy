@@ -38,7 +38,7 @@ TOOLS = {
     "git": (".gitconfig .githelpers .gitignore_global .gitmessage .local/bin/git-brst "
             ".local/bin/git-check-uncommitted .local/bin/git-cm .local/bin/git-publish "
             ".local/bin/git-uncommit .local/bin/g .local/bin/gbrm .local/bin/gl .local/bin/glg .local/bin/gwip",
-            "Git, diffnav and Neovim; host identity/signing in .gitconfig.local"),
+            "Git and Neovim; host identity/signing in .gitconfig.local"),
     "herdr": (".config/herdr", "Herdr"),
     "homebrew": ("Brewfile .config/homebrew .local/bin/bb .local/bin/bubo", "Homebrew under /opt/homebrew"),
     "kitty": (".config/kitty", "kitty and JetBrains Maple Mono installed for all users"),

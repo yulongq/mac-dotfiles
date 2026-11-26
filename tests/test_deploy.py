@@ -35,7 +35,7 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(list(self.dest.iterdir()), [])
         self.assertIn("kitty runtime:", preview.stderr)
         self.assertIn(".gitmessage runtime:", preview.stderr)
-        self.assertNotIn("diffnav", preview.stderr)
+        self.assertNotIn("git runtime:", preview.stderr)
         self.assertIn("new file mode 40700", preview.stdout)
         self.assertEqual(self.deploy("apply", *args).stdout, preview.stdout)
         kitty = self.dest / ".config/kitty"

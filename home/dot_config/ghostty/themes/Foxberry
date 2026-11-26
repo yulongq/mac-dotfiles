@@ -1,0 +1,31 @@
+# Foxberry for Ghostty.
+# Accents are Nord hues darkened to >= 4.5:1 on #ECEFF4; ANSI 7/15 are greys,
+# so programs that print in color 7 stay readable on a light background.
+# Part of Foxberry, a light Nord theme. MIT license; see LICENSE and THIRD_PARTY_NOTICES.md.
+
+palette = 0=#3b4252
+palette = 1=#be525a
+palette = 2=#4e8044
+palette = 3=#967044
+palette = 4=#5374b3
+palette = 5=#986393
+palette = 6=#287f92
+palette = 7=#6a7488
+palette = 8=#4c566a
+palette = 9=#da656d
+palette = 10=#619756
+palette = 11=#ad8455
+palette = 12=#658acd
+palette = 13=#b077ab
+palette = 14=#489784
+palette = 15=#8e97a8
+background = #e5e9f0
+# regular text is nord1, bold is stronger (mirrors the dimmed #BFC5D2 of dark Nord)
+foreground = #3b4252
+cursor-color = #a35e75
+cursor-text = #eceff4
+selection-background = #d8dee9
+selection-foreground = #2e3440
+
+# font thickening strength (font-thicken in config): dark text on a light background looks thinner; same idea as kitty's text_composition_strategy
+font-thicken-strength = 255
