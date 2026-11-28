@@ -3,9 +3,7 @@ approval_policy = "on-request"
 approvals_reviewer = "auto_review"
 # Keep startup non-interactive; the existing vendor installation owns explicit updates.
 check_for_update_on_startup = false
-cli_auth_credentials_store = "keyring"
 default_permissions = "development"
-mcp_oauth_credentials_store = "keyring"
 model_reasoning_summary = "concise"
 project_doc_fallback_filenames = [".claude/CLAUDE.md", "CLAUDE.md"]
 project_doc_max_bytes = 40960
@@ -73,6 +71,8 @@ hide_rate_limit_model_nudge = true
 
 [permissions.development.filesystem]
 ":root" = "write"
+"{{ .chezmoi.homeDir }}/.codex/auth.json" = "deny"
+"{{ .chezmoi.homeDir }}/.codex/.credentials.json" = "deny"
 "{{ .chezmoi.homeDir }}/.codex/plugins/cache/openai-bundled/browser" = "read"
 # Codex read entries take exact paths or a trailing `/**`, while git-style globs
 # (`*`, `?`, `[`, `]`) are accepted only for deny, so ~/.ssh is denied as a whole

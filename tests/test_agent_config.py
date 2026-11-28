@@ -119,6 +119,11 @@ enabled = true
             self.assertEqual(profiles["other"], {"filesystem": {":root": "read"}})
             if mode == "sandbox":
                 self.assertEqual(profiles["development"]["filesystem"][str(self.destination / ".ssh")], "deny")
+                self.assertEqual(profiles["development"]["filesystem"][str(self.destination / ".codex/auth.json")], "deny")
+                self.assertEqual(
+                    profiles["development"]["filesystem"][str(self.destination / ".codex/.credentials.json")],
+                    "deny",
+                )
             self.assertEqual(config, shared)
             before = target.read_bytes()
             self.apply(relative, mode=mode)
@@ -127,6 +132,7 @@ enabled = true
         self.apply(relative)
         config = tomllib.loads(target.read_text())
         self.assertEqual(config["default_permissions"], ":danger-full-access")
+        self.assertEqual(config["cli_auth_credentials_store"], "file")
         self.assertEqual(config["tui"]["copy_on_select"], "always")
 
     def test_invalid_mode_leaves_settings_untouched(self):
@@ -209,9 +215,17 @@ enabled = true
         self.assertEqual(settings["env"]["CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS"], "1800000")
         self.assertIn("~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
                       settings["sandbox"]["network"]["allowUnixSockets"])
+        for rule in (
+            "Bash(*.codex/.credentials.json*)",
+            "Edit(~/.codex/.credentials.json*)",
+            "Read(~/.codex/.credentials.json*)",
+        ):
+            self.assertIn(rule, settings["permissions"]["deny"])
         config = tomllib.loads(codex.read_text())
         self.assertNotIn("model", config)
         self.assertNotIn("model_context_window", config)
+        self.assertNotIn("cli_auth_credentials_store", config)
+        self.assertNotIn("mcp_oauth_credentials_store", config)
         self.assertEqual(config["tui"]["copy_on_select"], "always")
         self.assertEqual(config["tui"]["status_line"], [
             "model-with-reasoning", "git-branch", "context-used", "context-window-size",
@@ -337,6 +351,8 @@ enabled = true
 model_provider = "host-provider"
 model_reasoning_effort = "high"
 model_context_window = 400000
+cli_auth_credentials_store = "file"
+mcp_oauth_credentials_store = "file"
 [model_providers.host-provider]
 base_url = "https://route.example.invalid"
 [mcp_servers.node_repl]
@@ -353,7 +369,10 @@ host_authorization = "keep"
 '''
         actual = tomllib.loads(self.apply(".codex/config.toml", current).read_text())
         original = tomllib.loads(current)
-        for key in ("model", "model_provider", "model_reasoning_effort", "model_context_window", "model_providers"):
+        for key in (
+            "model", "model_provider", "model_reasoning_effort", "model_context_window",
+            "cli_auth_credentials_store", "mcp_oauth_credentials_store", "model_providers",
+        ):
             self.assertEqual(actual[key], original[key])
         node = actual["mcp_servers"]["node_repl"]
         self.assertNotIn("url", node)

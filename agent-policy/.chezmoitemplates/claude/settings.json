@@ -68,6 +68,7 @@
     ],
     "deny": [
       "Bash(*.claude/.credentials.json*)",
+      "Bash(*.codex/.credentials.json*)",
       "Bash(*.npmrc*)",
       "Bash(*.zsh_history*)",
       "Bash(*auth.json*)",
@@ -75,6 +76,7 @@
       "Bash(*private-keys-v1.d*)",
       "DesignSync",
       "Edit(~/.claude/.credentials.json*)",
+      "Edit(~/.codex/.credentials.json*)",
       "Edit(~/.gnupg/private-keys-v1.d/**)",
       "Edit(~/.npmrc*)",
       "Edit(~/*/auth.json*)",
@@ -87,6 +89,7 @@
       "Read(**/.env)",
       "Read(~/.aws/credentials*)",
       "Read(~/.claude/.credentials.json*)",
+      "Read(~/.codex/.credentials.json*)",
       "Read(~/.gnupg/private-keys-v1.d/**)",
       "Read(~/.zsh_history*)",
       "Read(~/*/auth.json*)",

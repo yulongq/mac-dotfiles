@@ -84,6 +84,10 @@ The follow-up recovered the selected Pi footer and Herdr sidebar adoption, but c
 
 **Pass the pane's server when a Rex action launches a separate CLI.** Rex routes an action's own calls through `ctx.server`, but a detached helper's CLI does not inherit that routing. The close confirmation passed only the session and block, so a remote pane's confirmation targeted the local server. The [close regression checks](tests/test_rex_close.py) failed at both helper and CLI boundaries before the fix and now verify the server alongside the target IDs and request deadline.
 
+## Agent credential storage
+
+**Keep Agent credential-store selectors host-owned, and cover file-backed credential paths in agent sandboxes.** Declaring `cli_auth_credentials_store = "keyring"` and `mcp_oauth_credentials_store = "keyring"` in the Codex baseline template contradicted [ownership](docs/ownership.md#agent-settings) and clobbered host-level `"file"` selections on baseline applies. On macOS, a self-updating standalone Codex binary alongside bundled desktop binaries and headless callers (such as Orca `codex app-server` workers) invalidates the Keychain ACL on `"Codex Auth"` across upgrades, stacking layer-1000 `SecurityAgent` prompts that ignore `SIGTERM`. [The modifier tests](tests/test_agent_config.py) now assert that both credential-store keys stay undeclared on fresh renders and survive baseline applies, while Codex's `development` sandbox and Claude Code's deny rules cover `~/.codex/auth.json` and `~/.codex/.credentials.json`.
+
 ## Evidence boundaries
 
 **Choose exact non-secret targets before live drift checks, and leave unread scope unverified.** A directory can contain protected inputs even when only a managed child concerns the task. A guard denial provides no evidence of cleanliness; an unread file provides no evidence about its contents.
